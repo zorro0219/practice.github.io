@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI 스마트 가계부</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-main: #FBF8F3;
+            --bg-card: #FFFFFF;
+            --text-primary: #3E362E;
+            --text-muted: #8A7E72;
+            --brand-color: #795548;
+            --accent-income: #2E7D32;
+            --accent-expense: #C62828;
+            --accent-invest: #1565C0;
+            --border-light: #F0EAE1;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Noto Sans KR', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            background-color: #EFEBE4; 
+            color: var(--text-primary); 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            min-height: 100vh;
+        }
+
+        .phone-wrapper {
+            width: 100%; 
+            max-width: 430px; 
+            height: 100vh;
+            background-color: var(--bg-main); 
+            position: relative;
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+            padding-top: env(safe-area-inset-top, 20px); 
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .tab-content { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 12px 14px 100px 14px; 
+            display: none; 
+        }
+        .tab-content.active { 
+            display: block; 
+        }
+        .tab-content::-webkit-scrollbar { display: none; }
+
+        /* 글로벌 헤더 및 상단 검색 필터 */
+        .global-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .selector-group { display: flex; gap: 4px; }
+        .select-box { background: var(--bg-card); border: 1px solid var(--border-light); color: var(--text-primary); padding: 4px 6px; border-radius: 6px; font-size: 11px; font-weight: 600; outline: none; cursor: pointer; }
+
+        .app-card { background-color: var(--bg-card); border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border-light); box-shadow: 0 4px 12px rgba(138, 126, 114, 0.02); }
+        
+        .dashboard-main { background: linear-gradient(135deg, #FFFDF9 0%, #F5EFE6 100%); text-align: center; padding: 12px; }
+        .dashboard-main .label { font-size: 10px; color: var(--text-muted); }
+        .dashboard-main .val { font-size: 22px; font-weight: 700; margin: 1px 0; }
+        .dashboard-main .msg { font-size: 10px; }
+
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .grid-item { background: var(--bg-card); padding: 8px; border-radius: 10px; border: 1px solid var(--border-light); display: flex; align-items: center; gap: 6px; }
+        .grid-icon { width: 24px; height: 24px; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 11px; }
+        .grid-info span { font-size: 9px; color: var(--text-muted); display: block; line-height: 1.1; }
+        .grid-info strong { font-size: 11px; font-weight: 700; }
+
+        .target-quick-banner { display: flex; justify-content: space-between; align-items: center; background: #FAF3EC; border: 1px dashed #E0D4C5; padding: 6px 10px; border-radius: 8px; font-size: 10px; font-weight: 600; cursor: pointer; color: var(--brand-color); margin-bottom: 10px; }
+
+        .section-title-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 6px 2px; }
+        .section-title { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+        .btn-more { font-size: 10px; color: var(--text-muted); cursor: pointer; text-decoration: none; }
+
+        .ai-input-zone h2 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+        .ai-input-zone p { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+        .input-box-row { display: flex; flex-direction: column; gap: 8px; }
+        .ai-textarea { width: 100%; height: 90px; background-color: var(--bg-main); border: 1px solid #E5DEC9; border-radius: 10px; padding: 10px; font-size: 13px; color: var(--text-primary); outline: none; resize: none; }
+        .btn-send { background: var(--text-primary); color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; width: 100%; }
+
+        /* 검색 및 기간 확장 필터 바 */
+        .search-row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+        .search-input { flex: 1; background: var(--bg-card); border: 1px solid var(--border-light); padding: 8px 10px; border-radius: 8px; font-size: 12px; outline: none; height: 34px; }
+        
+        .period-filter-bar { display: flex; gap: 4px; background: #FAF7F2; padding: 4px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-light); }
+        .period-btn { flex: 1; background: transparent; border: none; font-size: 11px; color: var(--text-muted); padding: 6px; font-weight: 500; cursor: pointer; border-radius: 6px; }
+        .period-btn.active { background: var(--bg-card); color: var(--text-primary); font-weight: 700; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+
+        /* 대용량 및 스크롤 방지를 고려한 초고밀도(Dense) 내역 리스트 디자인 */
+        .history-box { display: flex; flex-direction: column; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 2px; border-bottom: 1px solid #F5EFE6; }
+        .history-item:last-child { border-bottom: none; }
+        .item-left { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; }
+        
+        /* image_99ce07.png 대비 크기를 극단적으로 줄인 아이콘 및 폰트 */
+        .item-icon { width: 18px; height: 18px; border-radius: 4px; background: #F5EFE6; display: flex; justify-content: center; align-items: center; font-size: 9px; flex-shrink: 0; color: var(--brand-color); }
+        .item-info-text { min-width: 0; flex: 1; }
+        .item-name { font-size: 11px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .item-sub { font-size: 9px; color: var(--text-muted); margin-top: 0px; }
+        .item-right { text-align: right; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .item-amt { font-size: 11px; font-weight: 700; }
+        
+        .btn-delete { background: none; border: none; color: #C62828; opacity: 0.3; cursor: pointer; padding: 2px; font-size: 10px; }
+        .btn-delete:hover { opacity: 1; }
+        
+        .tag-status { font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 700; display: inline-block; border: none; cursor: pointer; height: 16px; line-height: 14px; }
+        .tag-misu { background: #FF9800; color: #FFFFFF; }
+        .tag-done { background: #E0E0E0; color: #616161; cursor: default; }
+
+        /* 필터링 전용 액션 버튼 */
+        .btn-filter-action { height: 34px; padding: 0 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .btn-filter-misu { background: #FAF3EC; color: #FF9800; border: 1px solid #FFE0B2; }
+        .btn-filter-clear { background: var(--text-primary); color: white; }
+
+        /* 하단 탭 바 */
+        .nav-bar { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            height: calc(54px + env(safe-area-inset-bottom, 0px)); 
+            background-color: var(--bg-card); 
+            border-top: 1px solid var(--border-light); 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            padding-bottom: env(safe-area-inset-bottom, 4px); 
+            z-index: 10; 
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); font-size: 9px; font-weight: 500; cursor: pointer; text-decoration: none; flex: 1; height: 100%; justify-content: center; }
+        .nav-item i { font-size: 14px; margin-bottom: 2px; }
+        .nav-item.active { color: var(--text-primary); font-weight: 700; }
+        
+        .nav-center-add { width: 36px; height: 36px; background-color: var(--text-primary); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 14px; box-shadow: 0 4px 10px rgba(62, 54, 46, 0.15); z-index: 12; cursor: pointer; transition: background 0.2s; margin-bottom: 1px; }
+        .nav-center-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; position: relative; top: -4px; }
+        .nav-center-label { font-size: 9px; color: var(--text-muted); font-weight: 500; }
+        .nav-item.active .nav-center-label { color: var(--text-primary); font-weight: 700; }
+
+        .target-detail-card { background: #FFFFFF; border: 1px solid var(--border-light); border-radius: 12px; padding: 10px; }
+        .target-header-meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+        .progress-track-large { width: 100%; height: 8px; background-color: #EFEBE4; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+        .progress-bar-large { width: 0%; height: 100%; background: linear-gradient(90deg, var(--brand-color) 0%, #A1887F 100%); border-radius: 4px; transition: width 0.5s ease; }
+        .target-status-desc { font-size: 10px; color: var(--text-primary); line-height: 1.4; background: #FDFBF7; padding: 8px; border-radius: 6px; border-left: 3px solid var(--brand-color); }
+
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; visibility: hidden; opacity: 0; transition: all 0.3s ease; }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .custom-modal { background: var(--bg-card); border-radius: 16px; width: 85%; padding: 14px; }
+        .modal-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; text-align: center; }
+        .form-group { margin-bottom: 8px; }
+        .form-group label { font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 2px; }
+        .form-control { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-light); font-size: 11px; outline: none; }
+        .modal-buttons { display: flex; gap: 6px; margin-top: 12px; }
+        .btn-modal { flex: 1; padding: 7px; border-radius: 6px; border: none; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .btn-cancel { background: #EFEBE4; color: var(--text-primary); }
+        .btn-save { background: var(--text-primary); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="phone-wrapper">
+
+    <!-- ================= 1. 홈 탭 ================= -->
+    <div id="tab-home" class="tab-content active">
+        <div class="global-header">
+            <h1 style="font-size: 14px; font-weight: 700;">소비 대시보드</h1>
+            <!-- 🗓️ 연도별, 월별 실시간 연동 검색 셀렉터 분리 배치 -->
+            <div class="selector-group">
+                <select class="select-box" id="home-filter-year">
+                    <option value="2026">2026년</option>
+                    <option value="2025">2025년</option>
+                </select>
+                <select class="select-box" id="home-filter-month">
+                    <option value="06">6월</option>
+                    <option value="05">5월</option>
+                    <option value="12">12월</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="app-card dashboard-main">
+            <span class="label">선택 월 순 자산 수지</span>
+            <div class="val" id="home-suji">0원</div>
+            <div class="msg" id="home-suji-msg">계산 중...</div>
+        </div>
+        
+        <div class="grid-4">
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#E8F5E9; color:#2E7D32;"><i class="fa-solid fa-wallet"></i></div>
+                <div class="grid-info"><span>수입 총합</span><strong id="home-inc">0원</strong></div>
+            </div>
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#FFEBEE; color:#C62828;"><i class="fa-solid fa-pizza-slice"></i></div>
+                <div class="grid-info"><span>변동 지출</span><strong id="home-var">0원</strong></div>
+            </div>
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#ECEFF1; color:#455A64;"><i class="fa-solid fa-lock"></i></div>
+                <div class="grid-info"><span>고정비</span><strong id="home-fix">0원</strong></div>
+            </div>
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#E8F0FE; color:#1565C0;"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="grid-info"><span>저축·투자</span><strong id="home-inv">0원</strong></div>
+            </div>
+        </div>
+
+        <div class="target-quick-banner" id="home-target-banner">
+            <span>⚙️ 현재 한도: <span id="quick-target-name">🛵 배달음식</span> 관리 중</span>
+            <span>설정 <i class="fa-solid fa-chevron-right" style="font-size:8px;"></i></span>
+        </div>
+
+        <!-- ⏱️ 초고밀도 압축 적용 영역 (image_99ce07.png 피드백 반영 완료) -->
+        <div class="section-title-row">
+            <span class="section-title">⏱️ 최근 기록 (초고밀도 적용)</span>
+            <span class="btn-more" id="btn-home-to-history">전체보기 <i class="fa-solid fa-chevron-right" style="font-size:8px;"></i></span>
+        </div>
+        <div class="app-card" style="padding: 4px 8px;">
+            <div class="history-box" id="home-recent-container"></div>
+        </div>
+
+        <div class="section-title-row">
+            <span class="section-title">🎯 소비 절약 목표 지표</span>
+        </div>
+        <div class="target-detail-card">
+            <div class="target-header-meta">
+                <span id="home-target-cat">🛵 배달음식</span>
+                <span id="home-target-progress" style="color: var(--brand-color);">0원 / 0원</span>
+            </div>
+            <div class="progress-track-large">
+                <div class="progress-bar-large" id="home-target-bar"></div>
+            </div>
+            <div class="target-status-desc" id="home-target-msg">분석 중...</div>
+        </div>
+    </div>
+
+    <!-- ================= 2. 내역 탭 ================= -->
+    <div id="tab-history" class="tab-content">
+        <div class="global-header">
+            <h1 style="font-size: 14px; font-weight: 700;">상세 내역 명세서</h1>
+        </div>
+
+        <div class="period-filter-bar">
+            <button class="period-btn active" onclick="alert('추후 선택 연월 전체 데이터 로드 자동 연동')">당월 전체</button>
+            <button class="period-btn" onclick="alert('추후 캘린더 커스텀 기간 설정 모달 오픈')">기간 설정</button>
+            <button class="period-btn" onclick="alert('추후 다중 월별 선택 아카이브 토글 오픈')">월별 선택 ▾</button>
+        </div>
+
+        <div class="search-row">
+            <input type="text" class="search-input" id="search-bar" placeholder="🔍 제목, 카테고리 실시간 검색...">
+            <button class="btn-filter-action btn-filter-misu" id="btn-quick-misu">
+                <i class="fa-solid fa-filter"></i> 미수 정산만
+            </button>
+            <button class="btn-filter-action btn-filter-clear" id="btn-clear-misu" style="display: none;">
+                <i class="fa-solid fa-arrow-left"></i> 뒤로가기
+            </button>
+        </div>
+
+        <div class="app-card" style="padding: 4px 8px;">
+            <div class="history-box" id="global-history-container"></div>
+        </div>
+    </div>
+
+    <!-- ================= 3. 입력 탭 ================= -->
+    <div id="tab-input" class="tab-content">
+        <div class="global-header">
+            <h1 style="font-size: 14px; font-weight: 700;">자연어 AI 입력</h1>
+        </div>
+        <div class="app-card ai-input-zone">
+            <h2>오늘의 금융 소비 기록하기</h2>
+            <p>날짜와 시간은 기록 시점 기준으로 자동 매핑됩니다</p>
+            <div class="input-box-row">
+                <textarea class="ai-textarea" id="main-memo-input" placeholder="예: 스타벅스 4500원 카페&#10;예: 배달의민족 치킨 60000원&#10;예: 김A 20000원 미수"></textarea>
+                <button class="btn-send" id="btn-main-submit">기록하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 4. 분석 탭 ================= -->
+    <div id="tab-analysis" class="tab-content">
+        <div class="global-header">
+            <h1 style="font-size: 14px; font-weight: 700;">월간 보고서</h1>
+        </div>
+        <div class="app-card" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+            <i class="fa-solid fa-chart-pie" style="font-size: 30px; margin-bottom: 10px; color: var(--brand-color);"></i>
+            <p style="font-size: 12px; font-weight: 600; color: var(--text-primary);">소비 분석 요약 보고서 준비 중</p>
+        </div>
+    </div>
+
+    <!-- ================= 5. 목표 탭 ================= -->
+    <div id="tab-target" class="tab-content">
+        <div class="global-header">
+            <h1 style="font-size: 14px; font-weight: 700;">자산 목표</h1>
+        </div>
+        <div class="app-card" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+            <i class="fa-solid fa-bullseye" style="font-size: 30px; margin-bottom: 10px; color: var(--brand-color);"></i>
+            <p style="font-size: 12px; font-weight: 600; color: var(--text-primary);">장기 재무 자산 로드맵 준비 중</p>
+        </div>
+    </div>
+
+    <!-- 하단 탭 바 -->
+    <div class="nav-bar">
+        <div class="nav-item active" data-tab="tab-home"><i class="fa-solid fa-house"></i>홈</div>
+        <div class="nav-item" data-tab="tab-history"><i class="fa-regular fa-file-lines"></i>내역</div>
+        
+        <div class="nav-center-wrapper" data-tab="tab-input">
+            <div class="nav-center-add"><i class="fa-solid fa-plus"></i></div>
+            <span class="nav-center-label">입력</span>
+        </div>
+        
+        <div class="nav-item" data-tab="tab-analysis"><i class="fa-solid fa-chart-pie"></i>분석</div>
+        <div class="nav-item" data-tab="tab-target"><i class="fa-solid fa-crosshairs"></i>목표</div>
+    </div>
+</div>
+
+<!-- 설정 모달 -->
+<div class="modal-overlay" id="global-modal">
+    <div class="custom-modal">
+        <div class="modal-title">🎯 소비 절약 한도 설정</div>
+        <div class="form-group">
+            <label>카테고리</label>
+            <select class="form-control" id="modal-cat">
+                <option value="🛵 배달음식">🛵 배달음식</option>
+                <option value="☕ 카페">☕ 카페</option>
+                <option value="🍚 식비">🍚 식비</option>
+                <option value="🛍️ 쇼핑">🛍️ 쇼핑</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>한도 예산 금액 (원)</label>
+            <input type="number" class="form-control" id="modal-budget" value="300000">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-modal btn-cancel" id="btn-modal-close">취소</button>
+            <button class="btn-modal btn-save" id="btn-modal-save">저장</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 🗄️ 검색 필터 검증을 위해 다양한 연월(2026.06 / 2026.05 / 2025.12) 더미 데이터 구성
+    let ledgerData = [
+        { id: 1, year: '2026', month: '06', date: '06.28', time: '14:32', mainType: '변동', category: '🛵 배달음식', title: '배달의민족 치킨 독식(카드깡 전)', amount: 60000, isIncome: false, isMisu: false, isMisuClear: false },
+        { id: 2, year: '2026', month: '06', date: '06.28', time: '14:35', mainType: '변동', category: '🛵 배달음식', title: 'A 지출 정산분', amount: 20000, isIncome: false, isMisu: true, isMisuClear: false },
+        { id: 3, year: '2026', month: '06', date: '06.28', time: '14:35', mainType: '변동', category: '🛵 배달음식', title: 'B 지출 정산분', amount: 20000, isIncome: false, isMisu: true, isMisuClear: false },
+        { id: 4, year: '2026', month: '06', date: '06.25', time: '09:12', mainType: '고정', category: '📺 구독서비스', title: '넷플릭스 정기결제', amount: 17000, isIncome: false, isMisu: false, isMisuClear: false },
+        { id: 5, year: '2026', month: '06', date: '06.10', time: '10:00', mainType: '수입', category: '💰 월급', title: '회사 정기 월급여 입금', amount: 3850000, isIncome: true, isMisu: false, isMisuClear: false },
+        
+        // 2026년 5월 데이터
+        { id: 6, year: '2026', month: '05', date: '05.15', time: '18:40', mainType: '변동', category: '🍚 식비', title: '저녁 삼겹살 회식 대금', amount: 45000, isIncome: false, isMisu: false, isMisuClear: false },
+        { id: 7, year: '2026', month: '05', date: '05.02', time: '11:20', mainType: '변동', category: '☕ 카페', title: '스타벅스 아메리카노', amount: 4500, isIncome: false, isMisu: false, isMisuClear: false },
+        
+        // 2025년 12월 데이터
+        { id: 8, year: '2025', month: '12', date: '12.25', time: '21:05', mainType: '변동', category: '🛍️ 쇼핑', title: '크리스마스 기념 셀프 선물', amount: 120000, isIncome: false, isMisu: false, isMisuClear: false }
+    ];
+
+    let currentTarget = { category: '🛵 배달음식', budget: 300000 };
+    let currentSearchKeyword = '';
+
+    const navTabs = document.querySelectorAll('.nav-bar [data-tab]');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    // 하단 탭 스위칭 락커
+    navTabs.forEach(item => {
+        item.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            if(targetTab === 'tab-history') {
+                resetMisuFilterUI();
+            }
+            switchTab(targetTab);
+        });
+    });
+
+    document.getElementById('btn-home-to-history').addEventListener('click', () => {
+        resetMisuFilterUI();
+        switchTab('tab-history');
+    });
+
+    function switchTab(tabId) {
+        tabContents.forEach(tab => tab.classList.remove('active'));
+        navTabs.forEach(nav => nav.classList.remove('active'));
+
+        const targetTab = document.getElementById(tabId);
+        if(targetTab) targetTab.classList.add('active');
+
+        const matchingNav = document.querySelector(`.nav-bar [data-tab="${tabId}"]`);
+        if(matchingNav) matchingNav.classList.add('active');
+        
+        calculateAndRender();
+    }
+
+    // 🔄 선택 연도/월 필터 분기 연동 렌더링 엔진
+    function calculateAndRender() {
+        // 상단 셀렉트에서 선택된 연/월 값 추출
+        const filterYear = document.getElementById('home-filter-year').value;
+        const filterMonth = document.getElementById('home-filter-month').value;
+
+        let incomeSum = 0;
+        let variableSum = 0;
+        let fixedSum = 0;
+        let investSum = 0;
+        let targetSpent = 0;
+
+        const globalContainer = document.getElementById('global-history-container');
+        const homeContainer = document.getElementById('home-recent-container');
+        
+        globalContainer.innerHTML = '';
+        homeContainer.innerHTML = '';
+
+        // 1차 필터링: 선택된 연도와 월에 일치하는 데이터셋 스캔
+        const monthlyLedger = ledgerData.filter(item => item.year === filterYear && item.month === filterMonth);
+
+        monthlyLedger.forEach(item => {
+            if (item.isIncome) {
+                incomeSum += item.amount; 
+            } else {
+                let activeAmount = item.amount;
+                if (item.isMisu) activeAmount = 0; 
+                else if (item.isMisuClear) activeAmount = -item.amount;
+
+                if (item.mainType === '변동') variableSum += activeAmount;
+                if (item.mainType === '고정') fixedSum += activeAmount;
+                if (item.mainType === '투자') investSum += activeAmount;
+                
+                if (item.category === currentTarget.category) {
+                    targetSpent += activeAmount;
+                }
+            }
+        });
+
+        // 내역 검색어 조건 스캔 (전체 내역 탭 타겟)
+        const searchedData = monthlyLedger.filter(item => {
+            if (!currentSearchKeyword) return true;
+            const kw = currentSearchKeyword.trim().toLowerCase();
+            if (kw === '미수') return item.isMisu === true;
+            return item.title.toLowerCase().includes(kw) || item.category.toLowerCase().includes(kw);
+        });
+
+        if(searchedData.length === 0) {
+            globalContainer.innerHTML = `<div style="text-align:center; padding:15px; color:var(--text-muted); font-size:11px;">해당 연월에 일치하는 내역이 없습니다.</div>`;
+        }
+
+        // ⚡ 초고밀도 리스트 행 생성 팩토리 (아이콘 축소 및 시간 박제)
+        function createRowHtml(item) {
+            const row = document.createElement('div');
+            row.className = 'history-item';
+            
+            let icon = 'fa-receipt';
+            if (item.category.includes('배달')) icon = 'fa-motorcycle';
+            if (item.category.includes('구독')) icon = 'fa-tv';
+            if (item.category.includes('투자')) icon = 'fa-chart-line';
+            if (item.category.includes('수입') || item.category.includes('월급')) icon = 'fa-wallet';
+            if (item.category.includes('카페')) icon = 'fa-mug-hot';
+
+            let sign = item.isIncome ? '+' : '-';
+            let color = item.isIncome ? 'color:var(--accent-income);' : 'color:var(--text-primary);';
+
+            let statusBadge = '';
+            if (item.isMisu) {
+                statusBadge = `<button class="tag-status tag-misu" onclick="window.triggerMisuClear(event, ${item.id})">정산</button>`;
+            } else if (item.isMisuClear) {
+                statusBadge = `<span class="tag-status tag-done">차감완료</span>`;
+                sign = '+';
+                color = 'color: var(--accent-income);';
+            }
+
+            row.innerHTML = `
+                <div class="item-left">
+                    <div class="item-icon"><i class="fa-solid ${icon}"></i></div>
+                    <div class="item-info-text">
+                        <span class="item-name">${item.title}</span>
+                        <span class="item-sub">${item.category} • ${item.date} ${item.time || '00:00'}</span>
+                    </div>
+                </div>
+                <div class="item-right">
+                    <div>
+                        <span class="item-amt" style="${color}">${sign}${item.amount.toLocaleString()}원</span>
+                        <div style="margin-top:1px; line-height:1;">${statusBadge}</div>
+                    </div>
+                    <button class="btn-delete" title="삭제" onclick="window.deleteLedgerItem(event, ${item.id})">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+            return row;
+        }
+
+        // 상세 내역 탭 바인딩
+        searchedData.forEach(item => globalContainer.appendChild(createRowHtml(item)));
+
+        // ⏱️ 홈화면 최근 내역 바인딩 (선택 연월 기준 상위 3개만 컴팩트하게 노출)
+        const homeRecentItems = monthlyLedger.slice(0, 3);
+        if(homeRecentItems.length === 0) {
+            homeContainer.innerHTML = `<div style="text-align:center; padding:15px; color:var(--text-muted); font-size:11px;">해당 월의 최근 기록이 없습니다.</div>`;
+        } else {
+            homeRecentItems.forEach(item => homeContainer.appendChild(createRowHtml(item)));
+        }
+
+        // 실시간 연월 기반 수치 연동 매핑
+        document.getElementById('home-inc').textContent = incomeSum.toLocaleString() + '원';
+        document.getElementById('home-var').textContent = variableSum.toLocaleString() + '원';
+        document.getElementById('home-fix').textContent = fixedSum.toLocaleString() + '원';
+        document.getElementById('home-inv').textContent = investSum.toLocaleString() + '원';
+        
+        let netSuji = incomeSum - (variableSum + fixedSum + investSum);
+        document.getElementById('home-suji').textContent = (netSuji >= 0 ? '+' : '') + netSuji.toLocaleString() + '원';
+
+        const sujiMsgObj = document.getElementById('home-suji-msg');
+        if(netSuji < 0) {
+            sujiMsgObj.textContent = "🚨 지출이 수입을 초과했습니다.";
+            sujiMsgObj.style.color = 'var(--accent-expense)';
+        } else {
+            sujiMsgObj.textContent = "💡 수지가 균형 있게 관리되고 있습니다.";
+            sujiMsgObj.style.color = 'var(--text-muted)';
+        }
+
+        // 절약 목표 바 바인딩
+        document.getElementById('quick-target-name').textContent = currentTarget.category;
+        document.getElementById('home-target-cat').textContent = `🎯 ${currentTarget.category} 누적 현황`;
+        document.getElementById('home-target-progress').textContent = `${targetSpent.toLocaleString()}원 / ${parseInt(currentTarget.budget).toLocaleString()}원`;
+        
+        let rate = Math.max((targetSpent / currentTarget.budget) * 100, 0);
+        rate = Math.min(rate, 100);
+        document.getElementById('home-target-bar').style.width = rate + '%';
+
+        const msgObj = document.getElementById('home-target-msg');
+        if (rate >= 100) { 
+            msgObj.textContent = `🚨 예산 초과 상태! 지출 방어가 필요합니다.`; 
+            msgObj.style.color = 'var(--accent-expense)';
+        } else { 
+            msgObj.textContent = `💡 계획 대비 안정적으로 절약 타겟 수호 중 (${Math.round(rate)}%)`; 
+            msgObj.style.color = 'var(--brand-color)';
+        }
+    }
+
+    // 상단 연/월 셀렉트 박스 변경 시 즉시 리렌더링 이벤트 등록
+    document.getElementById('home-filter-year').addEventListener('change', calculateAndRender);
+    document.getElementById('home-filter-month').addEventListener('change', calculateAndRender);
+
+    // 내역 아이템 영구 삭제 연동
+    window.deleteLedgerItem = function(event, id) {
+        event.stopPropagation();
+        if(confirm("이 기록을 영구 제거하시겠습니까?")) {
+            ledgerData = ledgerData.filter(item => item.id !== id);
+            calculateAndRender();
+        }
+    };
+
+    // 정산 완료 스위칭 처리기
+    window.triggerMisuClear = function(event, id) {
+        event.stopPropagation();
+        if (confirm("정산금을 수령하셨습니까?\n확인 시 해당 월의 변동지출에서 실시간 참감 정산됩니다.")) {
+            const targetItem = ledgerData.find(item => item.id === id);
+            if(targetItem) {
+                targetItem.isMisu = false;
+                targetItem.isMisuClear = true; 
+                targetItem.title = targetItem.title.replace('정산분', '').trim() + ' [정산 완료]';
+            }
+            calculateAndRender();
+        }
+    };
+
+    function getCurrentFormattedTime() {
+        const now = new Date();
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }
+
+    // 자연어 등록 모듈 타임스탬프 자동 매핑
+    function handleNewMemoInput() {
+        const inputObj = document.getElementById('main-memo-input');
+        const text = inputObj.value.trim();
+        if(!text) return;
+
+        const amtMatch = text.replace(/,/g, '').match(/\d+/);
+        const amount = amtMatch ? parseInt(amtMatch[0]) : 0;
+        
+        let mainType = '변동';
+        let category = '🍚 식비';
+        let title = text.split(/[0-9]/)[0].trim() || '일반 지출';
+        let isIncome = false;
+        let isMisu = text.includes('미수') || text.includes('정산') || text.includes('더치페이');
+
+        if (text.includes('배민') || text.includes('배달')) { mainType = '변동'; category = '🛵 배달음식'; }
+        else if (text.includes('스벅') || text.includes('커피') || text.includes('카페')) { mainType = '변동'; category = '☕ 카페'; }
+        else if (text.includes('마트') || text.includes('식당')) { mainType = '변동'; category = '🍚 식비'; }
+        else if (text.includes('쇼핑') || text.includes('쿠팡')) { mainType = '변동'; category = '🛍️ 쇼핑'; }
+        
+        if (text.includes('월급') || text.includes('보너스')) { isIncome = true; mainType = '수입'; category = '💰 월급'; }
+
+        // 현재 앱 상단에서 지정하고 있는 연도와 월을 기반으로 강제 주입하여 실시간 데이터 갱신 유도
+        const currentYear = document.getElementById('home-filter-year').value;
+        const currentMonth = document.getElementById('home-filter-month').value;
+
+        const newRecord = { 
+            id: Date.now(), 
+            year: currentYear,
+            month: currentMonth,
+            date: `${currentMonth}.${new Date().getDate()}`, 
+            time: getCurrentFormattedTime(),
+            mainType, 
+            category, 
+            title, 
+            amount, 
+            isIncome, 
+            isMisu,
+            isMisuClear: false
+        };
+
+        ledgerData.unshift(newRecord);
+        inputObj.value = '';
+        
+        calculateAndRender();
+        switchTab('tab-home');
+    }
+
+    document.getElementById('btn-main-submit').addEventListener('click', handleNewMemoInput);
+
+    // 검색창 리스너
+    document.getElementById('search-bar').addEventListener('input', function() {
+        currentSearchKeyword = this.value;
+        calculateAndRender();
+    });
+
+    // 미수 모아보기 필터 및 뒤로가기 동적 토글 흐름
+    const btnQuickMisu = document.getElementById('btn-quick-misu');
+    const btnClearMisu = document.getElementById('btn-clear-misu');
+
+    btnQuickMisu.addEventListener('click', function() {
+        document.getElementById('search-bar').value = '';
+        currentSearchKeyword = '미수';
+        btnQuickMisu.style.display = 'none';
+        btnClearMisu.style.display = 'flex';
+        calculateAndRender();
+    });
+
+    btnClearMisu.addEventListener('click', function() {
+        resetMisuFilterUI();
+        calculateAndRender();
+    });
+
+    function resetMisuFilterUI() {
+        document.getElementById('search-bar').value = '';
+        currentSearchKeyword = '';
+        btnQuickMisu.style.display = 'flex';
+        btnClearMisu.style.display = 'none';
+    }
+
+    const modal = document.getElementById('global-modal');
+    function toggleModal(show) { modal.className = show ? 'modal-overlay active' : 'modal-overlay'; }
+    
+    document.getElementById('home-target-banner').addEventListener('click', () => toggleModal(true));
+    document.getElementById('btn-modal-close').addEventListener('click', () => toggleModal(false));
+    
+    document.getElementById('btn-modal-save').addEventListener('click', function() {
+        currentTarget.category = document.getElementById('modal-cat').value;
+        currentTarget.budget = parseInt(document.getElementById('modal-budget').value) || 300000;
+        toggleModal(false);
+        calculateAndRender();
+    });
+
+    calculateAndRender();
+});
+</script>
+</body>
+</html>

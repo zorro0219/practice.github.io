@@ -1,0 +1,16 @@
+{
+  "name": "AI 스마트 가계부",
+  "short_name": "스마트가계부",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#FBF8F3",
+  "theme_color": "#795548",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2454/2454261.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

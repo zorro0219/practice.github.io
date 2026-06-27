@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI 스마트 가계부</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-main: #FBF8F3;
+            --bg-card: #FFFFFF;
+            --text-primary: #3E362E;
+            --text-muted: #8A7E72;
+            --brand-color: #795548;
+            --accent-income: #4CAF50;
+            --accent-expense: #E53935;
+            --accent-invest: #2196F3;
+            --border-light: #F0EAE1;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Noto Sans KR', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            background-color: #EFEBE4; 
+            color: var(--text-primary); 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            min-height: 100vh;
+        }
+
+        .phone-wrapper {
+            width: 100%; 
+            max-width: 430px; 
+            height: 100vh;
+            background-color: var(--bg-main); 
+            position: relative;
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+            padding-top: env(safe-area-inset-top, 20px); 
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* 탭별 독립 스크롤 컨테이너 - 하단 여백을 100px로 늘려 컷팅 현상 완벽 방지 */
+        .tab-content { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 20px 20px 100px 20px; 
+            display: none; 
+        }
+        .tab-content.active { 
+            display: block; 
+        }
+        .tab-content::-webkit-scrollbar { display: none; }
+
+        /* 공통 헤더 */
+        .global-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .selector-group { display: flex; gap: 6px; }
+        .select-box { background: var(--bg-card); border: 1px solid var(--border-light); color: var(--text-primary); padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 600; outline: none; }
+
+        .app-card { background-color: var(--bg-card); border-radius: 20px; padding: 18px; margin-bottom: 14px; border: 1px solid var(--border-light); box-shadow: 0 4px 12px rgba(138, 126, 114, 0.03); }
+        
+        /* 홈 대시보드 */
+        .dashboard-main { background: linear-gradient(135deg, #FFFDF9 0%, #F5EFE6 100%); text-align: center; }
+        .dashboard-main .label { font-size: 12px; color: var(--text-muted); }
+        .dashboard-main .val { font-size: 26px; font-weight: 700; margin: 4px 0; }
+
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .grid-item { background: var(--bg-card); padding: 12px; border-radius: 16px; border: 1px solid var(--border-light); display: flex; align-items: center; gap: 10px; }
+        .grid-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 14px; }
+        .grid-info span { font-size: 11px; color: var(--text-muted); display: block; }
+        .grid-info strong { font-size: 13px; font-weight: 700; }
+
+        /* 상단 목표 퀵 배너 */
+        .target-quick-banner { display: flex; justify-content: space-between; align-items: center; background: #FAF3EC; border: 1px dashed #E0D4C5; padding: 10px 14px; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--brand-color); }
+
+        /* 섹션 타이틀 스타일 */
+        .section-title-row { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 10px 2px; }
+        .section-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+        .btn-more { font-size: 11px; color: var(--text-muted); cursor: pointer; text-decoration: none; }
+
+        /* AI 지출 입력존 */
+        .ai-input-zone h2 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .ai-input-zone p { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+        .input-box-row { display: flex; flex-direction: column; gap: 10px; }
+        .ai-textarea { width: 100%; height: 90px; background-color: var(--bg-main); border: 1px solid #E5DEC9; border-radius: 12px; padding: 12px; font-size: 13.5px; color: var(--text-primary); outline: none; resize: none; }
+        .btn-send { background: var(--text-primary); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%; }
+
+        /* 히스토리 리스트 */
+        .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .search-input { flex: 1; background: var(--bg-card); border: 1px solid var(--border-light); padding: 10px 12px; border-radius: 10px; font-size: 13px; outline: none; }
+        
+        .history-box { display: flex; flex-direction: column; gap: 4px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; border-bottom: 1px solid var(--border-light); border-radius: 8px; transition: background 0.2s; }
+        .history-item:last-child { border-bottom: none; }
+        .history-item:hover { background-color: #FDFBF7; }
+        .item-left { display: flex; align-items: center; gap: 10px; }
+        .item-icon { width: 36px; height: 36px; border-radius: 50%; background: #F5EFE6; display: flex; justify-content: center; align-items: center; font-size: 14px; }
+        .item-name { font-size: 13.5px; font-weight: 600; display: block; color: var(--text-primary); }
+        .item-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .item-right { text-align: right; display: flex; align-items: center; gap: 12px; }
+        .item-amt { font-size: 14px; font-weight: 700; }
+        
+        .btn-delete { background: none; border: none; color: #C62828; opacity: 0.4; cursor: pointer; padding: 4px; font-size: 14px; transition: opacity 0.2s; }
+        .btn-delete:hover { opacity: 1; }
+        
+        .tag-status { font-size: 10px; padding: 2px 5px; border-radius: 4px; font-weight: bold; display: inline-block; margin-top: 2px; }
+        .tag-misu { background: #FFF3E0; color: #E65100; cursor: pointer; }
+        .tag-done { background: #E8F5E9; color: #2E7D32; }
+
+        /* 하단 고정 홈 홈바 내비게이션 */
+        .nav-bar { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            height: calc(65px + env(safe-area-inset-bottom, 0px)); 
+            background-color: var(--bg-card); 
+            border-top: 1px solid var(--border-light); 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            padding-bottom: env(safe-area-inset-bottom, 8px); 
+            z-index: 10; 
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); font-size: 11px; font-weight: 500; cursor: pointer; text-decoration: none; flex: 1; height: 100%; justify-content: center; }
+        .nav-item i { font-size: 18px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--text-primary); font-weight: 700; }
+        
+        /* ⚙️ 톱니바퀴 대신 과녁 아이콘을 품은 중앙 목표 바로가기 액션 버튼 */
+        .nav-center-add { width: 46px; height: 46px; background-color: var(--text-primary); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 19px; box-shadow: 0 4px 10px rgba(62, 54, 46, 0.2); transform: translateY(-10px); cursor: pointer; transition: background 0.2s; }
+        .nav-center-add:hover { background-color: var(--brand-color); }
+
+        /* 목표 상세 대시보드 그래픽 컴포넌트 */
+        .target-detail-card { background: #FFFFFF; border: 1px solid var(--border-light); border-radius: 20px; padding: 20px; }
+        .target-header-meta { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+        .progress-track-large { width: 100%; height: 12px; background-color: #EFEBE4; border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+        .progress-bar-large { width: 0%; height: 100%; background: linear-gradient(90deg, var(--brand-color) 0%, #A1887F 100%); border-radius: 6px; transition: width 0.5s ease; }
+        .target-status-desc { font-size: 12px; color: var(--text-primary); line-height: 1.6; background: #FDFBF7; padding: 12px; border-radius: 10px; border-left: 3px solid var(--brand-color); }
+
+        /* 모달 팝업 */
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; visibility: hidden; opacity: 0; transition: all 0.3s ease; }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .custom-modal { background: var(--bg-card); border-radius: 24px; width: 85%; padding: 20px; }
+        .modal-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; text-align: center; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+        .form-control { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-light); font-size: 13px; outline: none; }
+        .modal-buttons { display: flex; gap: 8px; margin-top: 16px; }
+        .btn-modal { flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-cancel { background: #EFEBE4; color: var(--text-primary); }
+        .btn-save { background: var(--text-primary); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="phone-wrapper">
+
+    <!-- ================= 1. 홈 탭 ================= -->
+    <div id="tab-home" class="tab-content active">
+        <div class="global-header">
+            <h1 style="font-size: 18px; font-weight: 700;">6월의 소비 현황</h1>
+            <div class="selector-group"><select class="select-box"><option>2026년</option></select></div>
+        </div>
+        
+        <!-- 자산 대시보드 -->
+        <div class="app-card dashboard-main">
+            <span class="label">이번 달 순 자산 수지</span>
+            <div class="val" id="home-suji">+2,100,000원</div>
+            <div style="font-size: 11.5px; color: var(--text-muted);" id="home-suji-msg">💡 수입 대비 투자가 안정적입니다.</div>
+        </div>
+        
+        <!-- 4분할 격자 섹션 -->
+        <div class="grid-4">
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#E8F5E9; color:#2E7D32;"><i class="fa-solid fa-wallet"></i></div>
+                <div class="grid-info"><span>수입</span><strong id="home-inc">0</strong></div>
+            </div>
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#FFEBEE; color:#C62828;"><i class="fa-solid fa-pizza-slice"></i></div>
+                <div class="grid-info"><span>변동 지출</span><strong id="home-var">0</strong></div>
+            </div>
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#ECEFF1; color:#455A64;"><i class="fa-solid fa-lock"></i></div>
+                <div class="grid-info"><span>고정비</span><strong id="home-fix">0</strong></div>
+            </div>
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#E8F0FE; color:#1565C0;"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="grid-info"><span>저축·투자</span><strong id="home-inv">0</strong></div>
+            </div>
+        </div>
+
+        <!-- ⚡ 상단 목표 설정 진입용 미니 퀵 배너 -->
+        <div class="target-quick-banner" id="home-target-banner">
+            <span>⚙️ 현재 목표: <span id="quick-target-name">🛵 배달음식</span> 절약 관리 중</span>
+            <span>설정 변경 <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i></span>
+        </div>
+
+        <!-- 최근 소비 내역 -->
+        <div class="section-title-row">
+            <span class="section-title">⏱️ 최근 기록된 내역</span>
+            <span class="btn-more" id="btn-home-to-history">전체보기 <i class="fa-solid fa-chevron-right"></i></span>
+        </div>
+        <div class="app-card" style="padding: 10px 14px;">
+            <div class="history-box" id="home-recent-container"></div>
+        </div>
+
+        <!-- ✨ [레이아웃 교체 배치] 하단 비던 자리에 가이드 대신 '이달의 목표 리포트 대시보드' 장착 -->
+        <div class="section-title-row">
+            <span class="section-title">🎯 이달의 소비 절약 목표</span>
+        </div>
+        <div class="target-detail-card">
+            <div class="target-header-meta">
+                <span id="home-target-cat">🛵 배달음식</span>
+                <span id="home-target-progress" style="color: var(--brand-color);">0원 / 0원</span>
+            </div>
+            <div class="progress-track-large">
+                <div class="progress-bar-large" id="home-target-bar"></div>
+            </div>
+            <div class="target-status-desc" id="home-target-msg">
+                가계부 지출을 분석하여 목표 달성률을 실시간 계산 중입니다.
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 2. 입력 탭 ================= -->
+    <div id="tab-input" class="tab-content">
+        <div class="global-header">
+            <h1 style="font-size: 18px; font-weight: 700;">지출 입력</h1>
+        </div>
+        <div class="app-card ai-input-zone">
+            <h2>오늘 무엇을 쓰셨나요?</h2>
+            <p>AI가 자동으로 분류하고 기록해드려요</p>
+            <div class="input-box-row">
+                <textarea class="ai-textarea" id="main-memo-input" placeholder="예: 스타벅스 아메리카노 4500원 식비&#10;예: 배달의민족 치킨 23000원&#10;예: 김지용 배달비 정산 13500원 미수"></textarea>
+                <button class="btn-send" id="btn-main-submit">기록하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 3. 내역 탭 ================= -->
+    <div id="tab-history" class="tab-content">
+        <div class="global-header">
+            <h1 style="font-size: 18px; font-weight: 700;">상세 내역</h1>
+        </div>
+        <div class="search-row">
+            <input type="text" class="search-input" id="search-bar" placeholder="🔍 가계부 내역 검색 (예: 스타벅스, 미수)">
+        </div>
+        <div class="app-card">
+            <div class="history-box" id="global-history-container"></div>
+        </div>
+    </div>
+
+    <!-- ================= 4. 분석 탭 ================= -->
+    <div id="tab-analysis" class="tab-content">
+        <div class="global-header">
+            <h1 style="font-size: 18px; font-weight: 700;">소비 분석</h1>
+        </div>
+        <div class="app-card" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+            <i class="fa-solid fa-chart-pie" style="font-size: 48px; margin-bottom: 12px; color: var(--brand-color);"></i>
+            <p style="font-size: 14px; font-weight: 500;">카테고리별 시각화 데이터 준비 중</p>
+        </div>
+    </div>
+
+    <!-- ================= 5. 목표 탭 ================= -->
+    <div id="tab-target" class="tab-content">
+        <div class="global-header">
+            <h1 style="font-size: 18px; font-weight: 700;">자산 목표</h1>
+        </div>
+        <div class="app-card" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+            <i class="fa-solid fa-flag" style="font-size: 48px; margin-bottom: 12px; color: var(--brand-color);"></i>
+            <p style="font-size: 14px; font-weight: 500;">장기 저축 목표 관리 기능 준비 중</p>
+        </div>
+    </div>
+
+    <!-- 하단 통합 네비게이션 홈바 -->
+    <div class="nav-bar">
+        <div class="nav-item active" data-tab="tab-home"><i class="fa-solid fa-house"></i>홈</div>
+        <div class="nav-item" data-tab="tab-input" id="nav-direct-input"><i class="fa-regular fa-pen-to-square"></i>입력</div>
+        <!-- 🎯 중앙 아이콘을 톱니바퀴에서 '🎯 과녁(목표)' 모양으로 깔끔하게 교체 완료 -->
+        <div class="nav-center-add" id="btn-global-config" title="목표 설정"><i class="fa-solid fa-bullseye"></i></div>
+        <div class="nav-item" data-tab="tab-history"><i class="fa-regular fa-file-lines"></i>내역</div>
+        <div class="nav-item" id="nav-misu-filter"><i class="fa-solid fa-receipt"></i>미수정산</div>
+    </div>
+</div>
+
+<!-- 목표 변경 설정 레이어 모달 -->
+<div class="modal-overlay" id="global-modal">
+    <div class="custom-modal">
+        <div class="modal-title">🎯 이번 달 절약 목표 설정</div>
+        <div class="form-group">
+            <label>목표 카테고리</label>
+            <select class="form-control" id="modal-cat">
+                <option value="🛵 배달음식">🛵 배달음식</option>
+                <option value="☕ 카페">☕ 카페</option>
+                <option value="🍚 식비">🍚 식비</option>
+                <option value="🛍️ 쇼핑">🛍️ 쇼핑</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>한도 금액 (원)</label>
+            <input type="number" class="form-control" id="modal-budget" value="300000">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-modal btn-cancel" id="btn-modal-close">취소</button>
+            <button class="btn-modal btn-save" id="btn-modal-save">저장</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let ledgerData = [
+        { id: 1, date: '06.28', mainType: '변동', category: '🛵 배달음식', title: '배달의민족 치킨', amount: 27000, isIncome: false, isMisu: false },
+        { id: 2, date: '06.25', mainType: '고정', category: '📺 구독서비스', title: '넷플릭스 정기결제', amount: 17000, isIncome: false, isMisu: false },
+        { id: 3, date: '06.20', mainType: '투자', category: '📈 투자', title: '미국 주식(ETF) 매수', amount: 500000, isIncome: false, isMisu: false },
+        { id: 4, date: '06.18', mainType: '수입', category: '🎁 기타수입', title: '김지용 (배달음식 정산)', amount: 13500, isIncome: true, isMisu: true }
+    ];
+
+    let currentTarget = { category: '🛵 배달음식', budget: 300000 };
+    let currentSearchKeyword = '';
+
+    const navItems = document.querySelectorAll('.nav-bar .nav-item[data-tab]');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            switchTab(this.getAttribute('data-tab'));
+        });
+    });
+
+    document.getElementById('btn-home-to-history').addEventListener('click', () => switchTab('tab-history'));
+
+    function switchTab(tabId) {
+        tabContents.forEach(tab => tab.classList.remove('active'));
+        navItems.forEach(nav => nav.classList.remove('active'));
+
+        const targetTab = document.getElementById(tabId);
+        if(targetTab) targetTab.classList.add('active');
+
+        const matchingNav = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+        if(matchingNav) matchingNav.classList.add('active');
+    }
+
+    function calculateAndRender() {
+        let incomeSum = 3850000;
+        let variableSum = 0;
+        let fixedSum = 0;
+        let investSum = 0;
+        let targetSpent = 0;
+
+        const globalContainer = document.getElementById('global-history-container');
+        const homeContainer = document.getElementById('home-recent-container');
+        
+        globalContainer.innerHTML = '';
+        homeContainer.innerHTML = '';
+
+        const filteredData = ledgerData.filter(item => {
+            if (!currentSearchKeyword) return true;
+            const kw = currentSearchKeyword.toLowerCase();
+            return item.title.toLowerCase().includes(kw) || item.category.toLowerCase().includes(kw) || (kw === '미수' && item.isMisu);
+        });
+
+        if(filteredData.length === 0) {
+            globalContainer.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:13px;">내역이 존재하지 않습니다.</div>`;
+        }
+
+        ledgerData.forEach(item => {
+            if (item.isIncome) { incomeSum += item.amount; } 
+            else {
+                if (item.mainType === '변동') variableSum += item.amount;
+                if (item.mainType === '고정') fixedSum += item.amount;
+                if (item.mainType === '투자') investSum += item.amount;
+            }
+            if (item.category === currentTarget.category && !item.isIncome) {
+                targetSpent += item.amount;
+            }
+        });
+
+        function createRowHtml(item, isHomeView) {
+            const row = document.createElement('div');
+            row.className = 'history-item';
+            
+            let icon = 'fa-shopping-bag';
+            if (item.category.includes('배달')) icon = 'fa-motorcycle';
+            if (item.category.includes('구독')) icon = 'fa-tv';
+            if (item.category.includes('투자')) icon = 'fa-chart-line';
+            if (item.category.includes('수입')) icon = 'fa-gift';
+
+            let sign = item.isIncome ? '+' : '-';
+            let color = item.isIncome ? 'color:var(--accent-income);' : 'color:var(--text-primary);';
+            if (item.mainType === '투자') color = 'color:var(--accent-invest);';
+
+            let statusBadge = '';
+            if (item.isMisu) {
+                statusBadge = `<span class="tag-status tag-misu" onclick="event.stopPropagation(); window.triggerMisuClear(${item.id})">미수</span>`;
+            } else if (item.isIncome && item.title.includes('정산')) {
+                statusBadge = `<span class="tag-status tag-done">정산완료</span>`;
+            }
+
+            let deleteBtnHtml = isHomeView ? '' : `
+                <button class="btn-delete" title="내역 삭제" onclick="window.deleteLedgerItem(${item.id})">
+                    <i class="fa-regular fa-trash-can"></i>
+                </button>
+            `;
+
+            row.innerHTML = `
+                <div class="item-left">
+                    <div class="item-icon"><i class="fa-solid ${icon}"></i></div>
+                    <div>
+                        <span class="item-name">${item.title}</span>
+                        <span class="item-sub">${item.category} • ${item.date}</span>
+                    </div>
+                </div>
+                <div class="item-right">
+                    <div>
+                        <span class="item-amt" style="${color}">${sign}${item.amount.toLocaleString()}원</span>
+                        ${statusBadge}
+                    </div>
+                    ${deleteBtnHtml}
+                </div>
+            `;
+            return row;
+        }
+
+        filteredData.forEach(item => globalContainer.appendChild(createRowHtml(item, false)));
+
+        const recentItems = ledgerData.slice(0, 3);
+        if(recentItems.length === 0) {
+            homeContainer.innerHTML = `<div style="text-align:center; padding:15px; color:var(--text-muted); font-size:12px;">아직 입력된 내역이 없습니다.</div>`;
+        } else {
+            recentItems.forEach(item => homeContainer.appendChild(createRowHtml(item, true)));
+        }
+
+        document.getElementById('home-inc').textContent = incomeSum.toLocaleString();
+        document.getElementById('home-var').textContent = variableSum.toLocaleString();
+        document.getElementById('home-fix').textContent = fixedSum.toLocaleString();
+        document.getElementById('home-inv').textContent = investSum.toLocaleString();
+        
+        let netSuji = incomeSum - (variableSum + fixedSum + investSum);
+        document.getElementById('home-suji').textContent = (netSuji >= 0 ? '+' : '') + netSuji.toLocaleString() + '원';
+
+        const sujiMsgObj = document.getElementById('home-suji-msg');
+        if(netSuji < 0) {
+            sujiMsgObj.textContent = "🚨 이번 달 지출이 수입을 초과했습니다! 비상 관리가 필요합니다.";
+            sujiMsgObj.style.color = 'var(--accent-expense)';
+        } else {
+            sujiMsgObj.textContent = "💡 수입 대비 저축 및 투자가 아주 안정적인 밸런스를 유지 중입니다.";
+            sujiMsgObj.style.color = 'var(--text-muted)';
+        }
+
+        // 🎯 이달의 목표 대시보드 실시간 텍스트 및 게이지 계산 연동
+        document.getElementById('quick-target-name').textContent = currentTarget.category;
+        document.getElementById('home-target-cat').textContent = `🎯 이번 달 ${currentTarget.category} 누적 소비`;
+        document.getElementById('home-target-progress').textContent = `${targetSpent.toLocaleString()}원 / ${parseInt(currentTarget.budget).toLocaleString()}원`;
+        
+        let rate = Math.min((targetSpent / currentTarget.budget) * 100, 100);
+        document.getElementById('home-target-bar').style.width = rate + '%';
+
+        const msgObj = document.getElementById('home-target-msg');
+        if (rate >= 100) { 
+            msgObj.textContent = `🚨 예산 초과! 설정한 한도를 초과했습니다. 이번 주 해당 항목 지출을 철저히 제한하세요.`; 
+            msgObj.style.color = 'var(--accent-expense)';
+        } else if (rate >= 70) { 
+            msgObj.textContent = `⚠️ 경고 단계! 한도까지 단 ${(currentTarget.budget - targetSpent).toLocaleString()}원 남았습니다. 속도 조절이 필요합니다.`; 
+            msgObj.style.color = '#EF6C00';
+        } else { 
+            msgObj.textContent = `💡 훌륭합니다! 현재 예산의 ${Math.round(rate)}%를 소비했으며, 계획대로 안정적으로 방어하고 있습니다.`; 
+            msgObj.style.color = 'var(--brand-color)';
+        }
+    }
+
+    window.deleteLedgerItem = function(id) {
+        if(confirm("정말로 이 내역을 가계부에서 영구 삭제하시겠습니까?")) {
+            ledgerData = ledgerData.filter(item => item.id !== id);
+            calculateAndRender();
+        }
+    };
+
+    window.triggerMisuClear = function(id) {
+        if (confirm("해당 미수 정산 항목을 입금 완료 상태로 전환하시겠습니까?")) {
+            const targetItem = ledgerData.find(item => item.id === id);
+            if(targetItem) {
+                targetItem.isMisu = false;
+                targetItem.title = targetItem.title.replace('(미수)', '').trim();
+            }
+            calculateAndRender();
+        }
+    };
+
+    function handleNewMemoInput() {
+        const inputObj = document.getElementById('main-memo-input');
+        const text = inputObj.value.trim();
+        if(!text) return;
+
+        const amtMatch = text.replace(/,/g, '').match(/\d+/);
+        const amount = amtMatch ? parseInt(amtMatch[0]) : 0;
+        
+        let mainType = '변동';
+        let category = '🍚 식비';
+        let title = text.split(/[0-9]/)[0].trim() || '지출 내역';
+        let isIncome = false;
+        let isMisu = text.includes('미수') || text.includes('정산예정');
+
+        if (text.includes('배민') || text.includes('배달')) { mainType = '변동'; category = '🛵 배달음식'; }
+        else if (text.includes('스벅') || text.includes('커피') || text.includes('카페')) { mainType = '변동'; category = '☕ 카페'; }
+        else if (text.includes('마트') || text.includes('식당')) { mainType = '변동'; category = '🍚 식비'; }
+        else if (text.includes('쇼핑') || text.includes('쿠팡')) { mainType = '변동'; category = '🛍️ 쇼핑'; }
+        else if (text.includes('넷플릭스') || text.includes('구독')) { mainType = '고정'; category = '📺 구독서비스'; }
+        else if (text.includes('주식') || text.includes('투자') || text.includes('ETF')) { mainType = '투자'; category = '📈 투자'; }
+        else if (text.includes('정산') || text.includes('입금') || text.includes('더치페이')) { isIncome = true; mainType = '수입'; category = '🎁 기타수입'; }
+
+        const newRecord = { id: Date.now(), date: '06.28', mainType, category, title: isMisu ? title + ' (미수)' : title, amount, isIncome, isMisu };
+        ledgerData.unshift(newRecord);
+        inputObj.value = '';
+        
+        calculateAndRender();
+        switchTab('tab-home');
+    }
+
+    document.getElementById('btn-main-submit').addEventListener('click', handleNewMemoInput);
+
+    document.getElementById('search-bar').addEventListener('input', function() {
+        currentSearchKeyword = this.value;
+        calculateAndRender();
+    });
+
+    document.getElementById('nav-misu-filter').addEventListener('click', function() {
+        switchTab('tab-history');
+        const sBar = document.getElementById('search-bar');
+        sBar.value = '미수';
+        currentSearchKeyword = '미수';
+        calculateAndRender();
+    });
+
+    const modal = document.getElementById('global-modal');
+    function toggleModal(show) { modal.className = show ? 'modal-overlay active' : 'modal-overlay'; }
+    
+    document.getElementById('home-target-banner').addEventListener('click', () => toggleModal(true));
+    document.getElementById('btn-global-config').addEventListener('click', () => toggleModal(true));
+    document.getElementById('btn-modal-close').addEventListener('click', () => toggleModal(false));
+    
+    document.getElementById('btn-modal-save').addEventListener('click', function() {
+        currentTarget.category = document.getElementById('modal-cat').value;
+        currentTarget.budget = parseInt(document.getElementById('modal-budget').value) || 300000;
+        toggleModal(false);
+        calculateAndRender();
+    });
+
+    calculateAndRender();
+});
+</script>
+</body>
+</html>

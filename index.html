@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI 스마트 가계부</title>
+    <link rel="manifest" href="manifest.json">
+    <!-- PWA 메타 태그 세팅 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- 구글 폰트 & 폰트어썸 아이콘 CDN -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-main: #FBF8F3;
+            --bg-card: #FFFFFF;
+            --text-primary: #3E362E;
+            --text-muted: #8A7E72;
+            --brand-color: #795548;
+            --accent-income: #4CAF50;
+            --accent-expense: #E53935;
+            --accent-invest: #2196F3;
+            --border-light: #F0EAE1;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Noto Sans KR', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* PWA 앱 전체 화면 핏 조정 */
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--text-primary); 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            min-height: 100vh;
+        }
+
+        .phone-wrapper {
+            width: 100%; 
+            max-width: 430px; 
+            height: 100vh;
+            background-color: var(--bg-main); 
+            position: relative;
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+            /* 아이폰의 상단 노치/다이내믹 아일랜드 영역 여백 확보 */
+            padding-top: env(safe-area-inset-top, 20px); 
+        }
+
+        /* "image_8e7154.png"의 가상 상단 바를 완전히 제거하고 시작하는 본문 스크롤 영역 */
+        .content-scroll { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 20px 20px 100px 20px; 
+        }
+        .content-scroll::-webkit-scrollbar { display: none; }
+
+        /* 글로벌 헤더 (연/월 타임머신 내비게이션) */
+        .global-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .selector-group { display: flex; gap: 6px; }
+        .select-box { background: var(--bg-card); border: 1px solid var(--border-light); color: var(--text-primary); padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 600; outline: none; }
+
+        .app-card { background-color: var(--bg-card); border-radius: 20px; padding: 18px; margin-bottom: 14px; border: 1px solid var(--border-light); box-shadow: 0 4px 12px rgba(138, 126, 114, 0.03); }
+        
+        /* 대시보드 */
+        .dashboard-main { background: linear-gradient(135deg, #FFFDF9 0%, #F5EFE6 100%); text-align: center; }
+        .dashboard-main .label { font-size: 12px; color: var(--text-muted); }
+        .dashboard-main .val { font-size: 26px; font-weight: 700; margin: 4px 0; }
+
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .grid-item { background: var(--bg-card); padding: 12px; border-radius: 16px; border: 1px solid var(--border-light); display: flex; align-items: center; gap: 10px; }
+        .grid-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 14px; }
+        .grid-info span { font-size: 11px; color: var(--text-muted); display: block; }
+        .grid-info strong { font-size: 13px; font-weight: 700; }
+
+        /* 가변형 목표 카드 */
+        .target-title-area { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+        .progress-track { width: 100%; height: 8px; background-color: #EFEBE4; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+        .progress-bar { width: 0%; height: 100%; background-color: var(--brand-color); border-radius: 4px; transition: width 0.4s ease; }
+        .target-comment { font-size: 11.5px; color: var(--brand-color); font-weight: 500; }
+
+        /* AI 자연어 입력존 */
+        .ai-input-zone h2 { font-size: 14.5px; font-weight: 700; margin-bottom: 2px; }
+        .ai-input-zone p { font-size: 11.5px; color: var(--text-muted); margin-bottom: 10px; }
+        .input-box-row { display: flex; gap: 8px; }
+        .ai-textarea { flex: 1; height: 46px; background-color: var(--bg-main); border: 1px solid #E5DEC9; border-radius: 12px; padding: 12px; font-size: 13px; color: var(--text-primary); outline: none; resize: none; }
+        .btn-send { background: var(--text-primary); color: white; border: none; padding: 0 16px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer; }
+
+        /* 검색 바 및 리스트 */
+        .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .search-input { flex: 1; background: var(--bg-card); border: 1px solid var(--border-light); padding: 8px 12px; border-radius: 10px; font-size: 12.5px; outline: none; }
+        .ledger-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; font-weight: 700; }
+        
+        .history-box { max-height: 240px; overflow-y: auto; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-light); }
+        .history-item:last-child { border-bottom: none; }
+        .item-left { display: flex; align-items: center; gap: 10px; }
+        .item-icon { width: 34px; height: 34px; border-radius: 50%; background: #F5EFE6; display: flex; justify-content: center; align-items: center; font-size: 14px; }
+        .item-name { font-size: 13px; font-weight: 600; display: block; }
+        .item-sub { font-size: 11px; color: var(--text-muted); }
+        .item-right { text-align: right; }
+        .item-amt { font-size: 13px; font-weight: 700; display: block; }
+        .tag-status { font-size: 9.5px; padding: 1px 4px; border-radius: 4px; font-weight: bold; }
+        .tag-misu { background: #FFF3E0; color: #E65100; }
+        .tag-done { background: #E8F5E9; color: #2E7D32; }
+
+        /* 하단 고정 홈 홈바 내비게이션 */
+        .nav-bar { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            height: calc(65px + env(safe-area-inset-bottom, 0px)); 
+            background-color: var(--bg-card); 
+            border-top: 1px solid var(--border-light); 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            padding-bottom: env(safe-area-inset-bottom, 8px); 
+            z-index: 10; 
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); font-size: 10px; font-weight: 500; cursor: pointer; text-decoration: none; }
+        .nav-item i { font-size: 16px; margin-bottom: 3px; }
+        .nav-item.active { color: var(--text-primary); font-weight: 700; }
+        .nav-center-add { width: 44px; height: 44px; background-color: var(--text-primary); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 18px; box-shadow: 0 4px 10px rgba(62, 54, 46, 0.2); transform: translateY(-10px); cursor: pointer; }
+
+        /* 목표 설정용 레이어 팝업 모달 */
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; visibility: hidden; opacity: 0; transition: all 0.3s ease; }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .custom-modal { background: var(--bg-card); border-radius: 24px; width: 85%; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .modal-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; text-align: center; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+        .form-control { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-light); font-size: 13px; outline: none; }
+        .modal-buttons { display: flex; gap: 8px; margin-top: 16px; }
+        .btn-modal { flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-cancel { background: #EFEBE4; color: var(--text-primary); }
+        .btn-save { background: var(--text-primary); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="phone-wrapper">
+    <!-- 가상 상태바 제거 완결 공간 -->
+    <div class="content-scroll">
+        <!-- 글로벌 헤더 (연/월 타임머신 내비게이션) -->
+        <div class="global-header">
+            <div>
+                <h1 style="font-size: 18px; font-weight: 700;">6월의 자산 흐름</h1>
+            </div>
+            <div class="selector-group">
+                <select class="select-box" id="select-year">
+                    <option value="2026" selected>2026년</option>
+                    <option value="2027">2027년</option>
+                </select>
+                <select class="select-box" id="select-month">
+                    <option value="05">5월</option>
+                    <option value="06" selected>6월</option>
+                    <option value="07">7월</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 1. 지출 피드백 메인 배너 -->
+        <div class="app-card dashboard-main">
+            <span class="label">이번 달 순 자산 수지</span>
+            <div class="val" id="total-suji">+2,100,000원</div>
+            <div style="font-size: 11.5px; color: var(--text-muted);" id="ai-top-comment">💡 수입 대비 투자가 안정적입니다.</div>
+        </div>
+
+        <!-- 2. 고정비/변동비/저축투자/수입 4분할 계량 스태츠 -->
+        <div class="grid-4">
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#E8F5E9; color:#2E7D32;"><i class="fa-solid fa-wallet"></i></div>
+                <div class="grid-info"><span>수입</span><strong id="stat-income">3,850,000</strong></div>
+            </div>
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#FFEBEE; color:#C62828;"><i class="fa-solid fa-pizza-slice"></i></div>
+                <div class="grid-info"><span>변동 지출</span><strong id="stat-variable">27,000</strong></div>
+            </div>
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#ECEFF1; color:#455A64;"><i class="fa-solid fa-lock"></i></div>
+                <div class="grid-info"><span>고정비</span><strong id="stat-fixed">17,000</strong></div>
+            </div>
+            <div class="grid-item">
+                <div class="grid-icon" style="background:#E8F0FE; color:#1565C0;"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="grid-info"><span>저축·투자</span><strong id="stat-invest">500,000</strong></div>
+            </div>
+        </div>
+
+        <!-- 3. 가변형 목표 트래커 매니저 카드 -->
+        <div class="app-card" id="target-card" style="cursor: pointer;" title="클릭 시 목표 수정 가능">
+            <div class="target-title-area">
+                <span>🎯 이번 달 목표: <span id="target-cat-label">🛵 배달음식</span> 아끼기</span>
+                <span id="target-progress-text">27,000원 / 300,000원</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-bar" id="target-progress-bar"></div>
+            </div>
+            <div class="target-comment" id="target-ai-msg">💡 좋은 페이스입니다! 목표 한도 내 안정적인 방어가 가능합니다.</div>
+        </div>
+
+        <!-- 4. AI 초간편 자연어 입력존 -->
+        <div class="app-card ai-input-zone">
+            <h2>오늘 무엇을 정산하거나 지출하셨나요?</h2>
+            <p>메모 형태로 편하게 적으시면 AI가 분류 및 정산 처리합니다.</p>
+            <div class="input-box-row">
+                <textarea class="ai-textarea" id="ai-memo-input" placeholder="예: 배민 치킨 27000원 카드 결제 / 지용이가 배달비 13500원 정산해줌 미수"></textarea>
+                <button class="btn-send" id="btn-submit-memo">기록</button>
+            </div>
+        </div>
+
+        <!-- 5. 검색 바 및 고도화 내역 리스트 -->
+        <div class="search-row">
+            <input type="text" class="search-input" id="search-keyword" placeholder="🔍 내역 검색 (예: 스타벅스, 배민, 미수)">
+        </div>
+
+        <div class="app-card" style="padding-bottom: 5px;">
+            <div class="ledger-list-header">
+                <span>📊 상세 내역 히스토리</span>
+            </div>
+            <div class="history-box" id="history-container">
+                <!-- JavaScript 로직 컴포넌트 데이터 처리 구역 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 하단 고정 APP 탭바 (톱니바퀴 클릭 시 모달 연동) -->
+    <div class="nav-bar">
+        <div class="nav-item active"><i class="fa-solid fa-house"></i>홈</div>
+        <div class="nav-item"><i class="fa-regular fa-pen-to-square"></i>입력</div>
+        <div class="nav-center-add" id="btn-open-target-modal"><i class="fa-solid fa-gear"></i></div>
+        <div class="nav-item"><i class="fa-regular fa-file-lines"></i>내역</div>
+        <div class="nav-item" id="btn-trigger-misu"><i class="fa-solid fa-receipt"></i>미수정산</div>
+    </div>
+</div>
+
+<!-- 동적 목표 설정을 위한 수동 설정 레이어 팝업 (모달) -->
+<div class="modal-overlay" id="target-modal">
+    <div class="custom-modal">
+        <div class="modal-title">🎯 이번 달 절약 목표 커스텀 설정</div>
+        <div class="form-group">
+            <label>목표 카테고리 선택</label>
+            <select class="form-control" id="modal-target-cat">
+                <option value="🛵 배달음식">🛵 배달음식</option>
+                <option value="🍚 식비">🍚 식비</option>
+                <option value="☕ 카페">☕ 카페</option>
+                <option value="🛍️ 쇼핑">🛍️ 쇼핑</option>
+                <option value="🎬 문화·여가">🎬 문화·여가</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>이번 달 목표 한도 한계 금액 (원)</label>
+            <input type="number" class="form-control" id="modal-target-budget" value="300000">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-modal btn-cancel" id="btn-close-modal">취소</button>
+            <button class="btn-modal btn-save" id="btn-save-modal">변경 적용</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let ledgerData = [
+        { date: '06.28', mainType: '변동', category: '🛵 배달음식', title: '배달의민족 치킨', amount: 27000, isIncome: false, isMisu: false },
+        { date: '06.25', mainType: '고정', category: '📺 구독서비스', title: '넷플릭스 정기결제', amount: 17000, isIncome: false, isMisu: false },
+        { date: '06.20', mainType: '투자', category: '📈 투자', title: '미국 주식(ETF) 정기 매수', amount: 500000, isIncome: false, isMisu: false },
+        { date: '06.18', mainType: '수입', category: '🎁 기타수입', title: '김지용 (배달음식 정산)', amount: 13500, isIncome: true, isMisu: true }
+    ];
+
+    let currentTarget = { category: '🛵 배달음식', budget: 300000 };
+
+    const historyContainer = document.getElementById('history-container');
+    const memoInput = document.getElementById('ai-memo-input');
+    const btnSubmit = document.getElementById('btn-submit-memo');
+    const searchInput = document.getElementById('search-keyword');
+    const targetModal = document.getElementById('target-modal');
+    const btnOpenModal = document.getElementById('btn-open-target-modal');
+    const targetCard = document.getElementById('target-card');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+    const btnSaveModal = document.getElementById('btn-save-modal');
+
+    function renderAndRecalculate() {
+        let incomeSum = 3850000; 
+        let variableSum = 0;
+        let fixedSum = 0;
+        let investSum = 0;
+        let targetSpent = 0;
+
+        historyContainer.innerHTML = '';
+        const keyword = searchInput.value.trim().toLowerCase();
+
+        for (let i = 0; i < ledgerData.length; i++) {
+            const item = ledgerData[i];
+            
+            if (keyword && !item.title.toLowerCase().includes(keyword) && !item.category.toLowerCase().includes(keyword) && !(item.isMisu && '미수'.includes(keyword))) {
+                continue;
+            }
+
+            if (item.isIncome) {
+                incomeSum += item.amount;
+            } else {
+                if (item.mainType === '변동') variableSum += item.amount;
+                if (item.mainType === '고정') fixedSum += item.amount;
+                if (item.mainType === '투자') investSum += item.amount;
+            }
+
+            if (item.category === currentTarget.category && !item.isIncome) {
+                targetSpent += item.amount;
+            }
+
+            const row = document.createElement('div');
+            row.className = 'history-item';
+            
+            let iconClass = 'fa-shopping-bag';
+            if (item.category.includes('배달')) iconClass = 'fa-motorcycle';
+            if (item.category.includes('구독')) iconClass = 'fa-tv';
+            if (item.category.includes('투자')) iconClass = 'fa-chart-line';
+            if (item.category.includes('수입')) iconClass = 'fa-gift';
+
+            let amtSign = item.isIncome ? '+' : '-';
+            let amtColor = item.isIncome ? 'color: var(--accent-income);' : 'color: var(--text-primary);';
+            if (item.mainType === '투자') amtColor = 'color: var(--accent-invest);';
+
+            let misuBadge = item.isMisu ? `<span class="tag-status tag-misu">미수</span>` : '';
+            if (item.isIncome && !item.isMisu && item.title.includes('정산')) misuBadge = `<span class="tag-status tag-done">정산완료</span>`;
+
+            row.innerHTML = `
+                <div class="item-left">
+                    <div class="item-icon"><i class="fa-solid ${iconClass}"></i></div>
+                    <div class="item-detail">
+                        <strong>${item.title}</strong>
+                        <span>${item.category} • ${item.date}</span>
+                    </div>
+                </div>
+                <div class="item-right">
+                    <span class="item-amt" style="${amtColor}">${amtSign}${item.amount.toLocaleString()}원</span>
+                    ${misuBadge}
+                </div>
+            `;
+            
+            if (item.isMisu) {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', function() {
+                    if (confirm(`[정산 처리] ${item.title}의 미수금이 완납되었습니까?`)) {
+                        item.isMisu = false;
+                        renderAndRecalculate();
+                    }
+                });
+            }
+
+            historyContainer.appendChild(row);
+        }
+
+        document.getElementById('stat-income').textContent = incomeSum.toLocaleString();
+        document.getElementById('stat-variable').textContent = variableSum.toLocaleString();
+        document.getElementById('stat-fixed').textContent = fixedSum.toLocaleString();
+        document.getElementById('stat-invest').textContent = investSum.toLocaleString();
+        
+        let netSuji = incomeSum - (variableSum + fixedSum + investSum);
+        document.getElementById('total-suji').textContent = (netSuji >= 0 ? '+' : '') + netSuji.toLocaleString() + '원';
+
+        document.getElementById('target-cat-label').textContent = currentTarget.category;
+        document.getElementById('target-progress-text').textContent = `${targetSpent.toLocaleString()}원 / ${parseInt(currentTarget.budget).toLocaleString()}원`;
+        
+        let rate = Math.min((targetSpent / currentTarget.budget) * 100, 100);
+        document.getElementById('target-progress-bar').style.width = rate + '%';
+
+        const commentObj = document.getElementById('target-ai-msg');
+        if (rate >= 100) {
+            commentObj.textContent = "🚨 목표 금액을 초과했습니다! 변동 지출을 엄격히 제한하세요.";
+            commentObj.style.color = 'var(--accent-expense)';
+        } else if (rate >= 70) {
+            commentObj.textContent = "⚠️ 지출 페이스가 빠릅니다. 주의해 주세요.";
+            commentObj.style.color = '#EF6C00';
+        } else {
+            commentObj.textContent = "💡 좋은 페이스입니다! 목표 한도 내 안정적인 방어가 가능합니다.";
+            commentObj.style.color = 'var(--brand-color)';
+        }
+    }
+
+    function parseNaturalLanguage(text) {
+        const amountMatch = text.replace(/,/g, '').match(/\d+/);
+        const amount = amountMatch ? parseInt(amountMatch[0]) : 0;
+        
+        let mainType = '변동';
+        let category = '🍚 식비';
+        let title = text.split(/[0-9]/)[0].trim() || '내역 지출';
+        let isIncome = false;
+        let isMisu = text.includes('미수') || text.includes('정산예정');
+
+        if (text.includes('배민') || text.includes('배달') || text.includes('요기요')) {
+            mainType = '변동'; category = '🛵 배달음식';
+        } else if (text.includes('커피') || text.includes('스벅') || text.includes('카페') || text.includes('투썸')) {
+            mainType = '변동'; category = '☕ 카페';
+        } else if (text.includes('마트') || text.includes('외식') || text.includes('식당')) {
+            mainType = '변동'; category = '🍚 식비';
+        } else if (text.includes('주유') || text.includes('기름') || text.includes('주차비') || text.includes('자동차보험')) {
+            mainType = '변동'; category = '🚗 자동차';
+        } else if (text.includes('지하철') || text.includes('버스') || text.includes('교통카드')) {
+            mainType = '변동'; category = '🚇 교통';
+        } else if (text.includes('옷') || text.includes('백화점') || text.includes('화장품') || text.includes('쿠팡')) {
+            mainType = '변동'; category = '🛍️ 쇼핑';
+        } else if (text.includes('영화') || text.includes('여행') || text.includes('헬스') || text.includes('약국')) {
+            mainType = '변동'; category = '🎬 문화·여가';
+        } else if (text.includes('월세') || text.includes('관리비') || text.includes('공과금')) {
+            mainType = '고정'; category = '🏠 월세·관리비';
+        } else if (text.includes('휴대폰') || text.includes('통신비') || text.includes('인터넷')) {
+            mainType = '고정'; category = '📱 통신비';
+        } else if (text.includes('실손') || text.includes('종합보험') || text.includes('보장보험')) {
+            mainType = '고정'; category = '🛡️ 보험료';
+        } else if (text.includes('넷플릭스') || text.includes('유튜브 프리미엄') || text.includes('구독')) {
+            mainType = '고정'; category = '📺 구독서비스';
+        } else if (text.includes('대출') || text.includes('원리금') || text.includes('은행이자')) {
+            mainType = '고정'; category = '🏦 대출이자';
+        } else if (text.includes('부모님') || text.includes('용돈')) {
+            mainType = '고정'; category = '👨&zwj;👩&zwj;👧 부모님 용돈';
+        } else if (text.includes('회비') || text.includes('경조사') || text.includes('축의금')) {
+            mainType = '고정'; category = '🤝 모임·경조사';
+        } else if (text.includes('적금') || text.includes('예금') || text.includes('저축')) {
+            mainType = '투자'; category = '🏦 저축';
+        } else if (text.includes('주식') || text.includes('투자') || text.includes('ETF')) {
+            mainType = '투자'; category = '📈 투자';
+        } else if (text.includes('월급') || text.includes('보너스') || text.includes('급여')) {
+            isIncome = true; mainType = '수입'; category = '💼 월급';
+        } else if (text.includes('정산') || text.includes('더치페이') || text.includes('보내줌') || text.includes('입금')) {
+            isIncome = true; mainType = '수입'; category = '🎁 기타수입';
+        }
+
+        return { date: '06.28', mainType, category, title, amount, isIncome, isMisu };
+    }
+
+    btnSubmit.addEventListener('click', function() {
+        const txt = memoInput.value.trim();
+        if(!txt) return;
+
+        const parsed = parseNaturalLanguage(txt);
+        ledgerData.unshift(parsed); 
+        memoInput.value = '';
+        renderAndRecalculate();
+    });
+
+    searchInput.addEventListener('input', renderAndRecalculate);
+
+    function toggleModal(show) { targetModal.className = show ? 'modal-overlay active' : 'modal-overlay'; }
+    targetCard.addEventListener('click', () => toggleModal(true));
+    btnOpenModal.addEventListener('click', () => toggleModal(true));
+    btnCloseModal.addEventListener('click', () => toggleModal(false));
+    
+    btnSaveModal.addEventListener('click', function() {
+        currentTarget.category = document.getElementById('modal-target-cat').value;
+        currentTarget.budget = parseInt(document.getElementById('modal-target-budget').value) || 300000;
+        toggleModal(false);
+        renderAndRecalculate();
+    });
+
+    document.getElementById('btn-trigger-misu').addEventListener('click', function() {
+        searchInput.value = '미수';
+        renderAndRecalculate();
+    });
+
+    renderAndRecalculate();
+});
+// PWA 서비스 워커를 브라우저에 등록하는 코드입니다.
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+    .then(() => console.log("PWA 서비스 워커 등록 성공!"))
+    .catch((err) => console.log("서비스 워커 등록 실패:", err));
+}
+</script>
+</body>
+</html>

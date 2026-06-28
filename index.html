@@ -49,6 +49,13 @@
         .dashboard-main .val { font-size: 24px; font-weight: 700; margin: 2px 0; }
         .dashboard-main .msg { font-size: 11px; color: var(--brand-color); }
 
+        /* 목표설정 카드 스타일 */
+        .goal-card { background: #FAF6F0; border: 1px solid #EFEAE1; }
+        .goal-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .goal-title-text { font-size: 12px; font-weight: 700; color: var(--brand-color); }
+        .btn-goal-config { font-size: 11px; color: var(--text-muted); cursor: pointer; background: none; border: none; }
+        .goal-info-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
         .grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; flex-shrink: 0; }
         .grid-item { background: var(--bg-card); padding: 10px; border-radius: 12px; border: 1px solid var(--border-light); display: flex; align-items: center; gap: 8px; }
         .grid-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 13px; }
@@ -144,6 +151,21 @@
             <div class="val" id="v-suji">0원</div>
             <div class="msg" id="v-msg">📊 데이터를 입력하여 가계 자산을 분석해보세요.</div>
         </div>
+
+        <!-- 복원된 기능: 🎯 이달의 목표 설정 및 진행율 게이지 카드 -->
+        <div class="app-card goal-card">
+            <div class="goal-header-row">
+                <span class="goal-title-text" id="v-goal-title">🎯 목표: 배달비 줄이기</span>
+                <button class="btn-goal-config" id="btn-open-goal-modal">설정 <i class="fa-solid fa-gear"></i></button>
+            </div>
+            <div class="chart-track" style="height: 10px; background: #EFE6D5;">
+                <div class="chart-fill" id="v-goal-bar" style="width: 0%; background: var(--brand-color);"></div>
+            </div>
+            <div class="goal-info-row">
+                <span id="v-goal-percent">진행률 0%</span>
+                <span id="v-goal-amt-status">0원 / 0원</span>
+            </div>
+        </div>
         
         <div class="grid-4">
             <div class="grid-item">
@@ -209,20 +231,17 @@
         </div>
     </div>
 
-    <!-- 4️⃣ 분석 탭 (저축·투자 리포트 고도화) -->
+    <!-- 4️⃣ 분석 탭 -->
     <div id="tab-analysis" class="tab-content">
         <div class="global-header">
             <h1 style="font-size: 18px; font-weight: 700;">월간 자산 분석 보고서</h1>
         </div>
         <div class="app-card" style="flex:1; overflow-y:auto; padding: 14px; margin-bottom:0; display:flex; flex-direction:column; gap:16px;">
             
-            <!-- 신규: 저축/투자 전용 집중 분석 파트 -->
             <div>
                 <div class="report-block-title"><span>💰 저축·투자 월별 성과 비교</span></div>
                 <div id="analysis-invest-compare" style="margin-bottom:10px;"></div>
-                <div class="invest-bar-container" id="invest-annual-chart">
-                    <!-- 자바스크립트로 동적 막대 차트 빌드 -->
-                </div>
+                <div class="invest-bar-container" id="invest-annual-chart"></div>
             </div>
 
             <div>
@@ -251,7 +270,7 @@
     </div>
 </div>
 
-<!-- 내역 수정 모달 팝업 (18개 카테고리 전면 반영 체계) -->
+<!-- 내역 수정 모달 팝업 -->
 <div class="modal-overlay" id="edit-modal">
     <div class="custom-modal">
         <div class="modal-title">📝 거래 내역 정밀 수정</div>
@@ -310,12 +329,34 @@
     </div>
 </div>
 
+<!-- 신규 추가: 목표 설정 관리 모달 팝업 -->
+<div class="modal-overlay" id="goal-modal">
+    <div class="custom-modal">
+        <div class="modal-title">🎯 이달의 목표 구성 및 설정</div>
+        <div class="form-group">
+            <label>목표 이름 (예: 배달비 줄이기, 저축 늘리기)</label>
+            <input type="text" class="form-control" id="input-goal-title" value="배달비 줄이기">
+        </div>
+        <div class="form-group">
+            <label>현재 진행 금액 (원)</label>
+            <input type="number" class="form-control" id="input-goal-current" value="23000">
+        </div>
+        <div class="form-group">
+            <label>목표 제한/설정 금액 (원)</label>
+            <input type="number" class="form-control" id="input-goal-target" value="200000">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-modal" style="background:#EFEBE4; color:var(--text-primary);" id="btn-goal-close">취소</button>
+            <button class="btn-modal" style="background:var(--text-primary); color:white;" id="btn-goal-save">목표 적용하기</button>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
-    // 🗄️ 영구 저장소 (localStorage) 연동 기본 설계 및 더미 기초 초기화데이터 세팅
+    // 🗄️ 영구 저장소 내역 데이터 로드
     let ledgerData = JSON.parse(localStorage.getItem('smart_ledger_data'));
-    
     if (!ledgerData || ledgerData.length === 0) {
         ledgerData = [
             { id: 1, year: '2026', month: '06', date: '06.28', time: '12:30', mainType: '변동', category: '🍚 식비', title: '점심식사 삼계탕', amount: 12000, isIncome: false, isMisu: false, misuAmt: 0 },
@@ -325,6 +366,13 @@ document.addEventListener('DOMContentLoaded', function() {
             { id: 5, year: '2026', month: '06', date: '06.10', time: '11:00', mainType: '저축', category: '📈 투자', title: '해외 테크 주식 매수', amount: 450000, isIncome: false, isMisu: false, misuAmt: 0 }
         ];
         localStorage.setItem('smart_ledger_data', JSON.stringify(ledgerData));
+    }
+
+    // 🗄️ 목표 데이터 저장소 구성 로드
+    let goalConfig = JSON.parse(localStorage.getItem('smart_ledger_goal'));
+    if (!goalConfig) {
+        goalConfig = { title: "배달비 줄이기", current: 23000, target: 200000 };
+        localStorage.setItem('smart_ledger_goal', JSON.stringify(goalConfig));
     }
 
     let showMisuOnly = false;
@@ -375,20 +423,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return total === 0 ? (parseInt(text.replace(/[^0-9]/g, '')) || 0) : total;
     }
 
-    // 🧠 추론 컨텍스트 기반 18개 카테고리 자율 분류 엔진 (2번 요구사항 반영)
+    // 🧠 자연어 자동 파싱용 규칙 정의 
     function deduceCategoryAndType(sentence) {
         let res = { mainType: '변동', category: '🍚 식비', isIncome: false };
 
         const rules = [
-            // 수입 분류군
             { keywords: ['월급', '급여', '보너스', '상여', '명절수당', '기본급'], mainType: '수입', category: '💼 월급', isIncome: true },
             { keywords: ['정산받은', '기타수입', '용돈', '부수입', '중고나라', '당근마켓', '캐시백', '알바', '환급금'], mainType: '수입', category: '🎁 기타수입', isIncome: true },
-            
-            // 저축 및 투자
             { keywords: ['적금', '예금', '청약', '저축', '군인공제', '도전저금'], mainType: '저축', category: '🏦 저축', isIncome: false },
             { keywords: ['주식', 'ETF', '코인', '펀드', '채권', '매수', '투자', '증권'], mainType: '저축', category: '📈 투자', isIncome: false },
-            
-            // 고정비 분류군
             { keywords: ['월세', '관리비', '전기세', '수도세', '가스비', '공과금'], mainType: '고정', category: '🏠 월세·관리비', isIncome: false },
             { keywords: ['휴대폰', '통신비', '인터넷', 'skylife', '요금제', '알뜰폰'], mainType: '고정', category: '📱 통신비', isIncome: false },
             { keywords: ['보험', '실비', '암보험', '운전자보험', '종신보험'], mainType: '고정', category: '🛡️ 보험료', isIncome: false },
@@ -396,8 +439,6 @@ document.addEventListener('DOMContentLoaded', function() {
             { keywords: ['대출', '이자', '원리금', '할부금융', '주담대'], mainType: '고정', category: '🏦 대출이자', isIncome: false },
             { keywords: ['부모님', '엄마용돈', '아빠용돈', '효도'], mainType: '고정', category: '👨‍👩‍👧 부모님 용돈', isIncome: false },
             { keywords: ['회비', '경조사', '축의금', '조의금', '선물', '생일선물'], mainType: '고정', category: '🤝 모임·경조사', isIncome: false },
-
-            // 변동 지출 분류군
             { keywords: ['배민', '배달', '요기요', '쿠팡이츠', '야식'], mainType: '변동', category: '🛵 배달음식', isIncome: false },
             { keywords: ['스타벅스', '카페', '커피', '투썸', '이디야', '베이커리', '빵집'], mainType: '변동', category: '☕ 카페', isIncome: false },
             { keywords: ['주유', '기름값', '주차비', '하이패스', '정비', '엔진오일', '자동차보험'], mainType: '변동', category: '🚗 자동차', isIncome: false },
@@ -418,9 +459,8 @@ document.addEventListener('DOMContentLoaded', function() {
         return res;
     }
 
-    // 🧮 메인 연산 및 로컬 스토리지 동기화 모듈
+    // 🧮 대시보드 갱신 및 데이터 동기화 통합 연산 함수
     function updateCalculations() {
-        // 내부 어레이 정렬 및 스토리지 백업
         localStorage.setItem('smart_ledger_data', JSON.stringify(ledgerData));
 
         const selectedYear = document.getElementById('main-year-select').value;
@@ -450,11 +490,26 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('v-fix').textContent = totalFixed.toLocaleString() + '원';
         document.getElementById('v-inv').textContent = totalInvest.toLocaleString() + '원';
 
+        // 🎯 목표설정 진행율 UI 동적 갱신
+        renderGoalUI();
         renderLists();
         renderAnalysisReport(totalIncome, totalVariable, totalFixed, totalInvest);
     }
 
-    // 📋 무한 동적 리스트 빌드 함수
+    // 🎯 목표설정 수치 랜더링 모듈
+    function renderGoalUI() {
+        const goal = JSON.parse(localStorage.getItem('smart_ledger_goal')) || { title: "배달비 줄이기", current: 23000, target: 200000 };
+        document.getElementById('v-goal-title').textContent = `🎯 목표: ${goal.title}`;
+        
+        let pct = goal.target > 0 ? Math.round((goal.current / goal.target) * 100) : 0;
+        if(pct > 100) pct = 100; // 최대 게이지 바 100% 한계치 지정
+
+        document.getElementById('v-goal-bar').style.width = `${pct}%`;
+        document.getElementById('v-goal-percent').textContent = `진행률 ${pct}%`;
+        document.getElementById('v-goal-amt-status').textContent = `${parseInt(goal.current).toLocaleString()}원 / ${parseInt(goal.target).toLocaleString()}원`;
+    }
+
+    // 📋 전체 명세 리스트 빌드 함수
     function renderLists() {
         const homeBox = document.getElementById('home-recent-box');
         const fullBox = document.getElementById('full-history-box');
@@ -511,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 📊 저축·투자 성과 모니터링 및 종합 차트 대시보드 연동 (3번 요구사항 반영)
+    // 📊 리포트 및 시각화 빌드 모듈
     function renderAnalysisReport(inc, vec, fix, inv) {
         const typeBox = document.getElementById('analysis-type-box');
         const catBox = document.getElementById('analysis-chart-box');
@@ -522,11 +577,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const curYear = document.getElementById('main-year-select').value;
         const curMonth = document.getElementById('main-month-select').value;
 
-        // --- [저축·투자 월별 및 연간 차트 분석 엔진] ---
         let prevMonthStr = String(parseInt(curMonth) - 1).padStart(2, '0');
         let prevInvestAmt = 0;
-
-        // 월별 연간 통계 배열 초기화
         let monthlyInvestMap = { '01': 0, '02': 0, '03': 0, '04': 0, '05': 0, '06': 0 };
 
         ledgerData.forEach(item => {
@@ -548,15 +600,12 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
-        // 연간 차트 그리기 (최대 높이 60px 비례 제한)
         investAnnualBox.innerHTML = '';
         let maxInvestInYear = Math.max(...Object.values(monthlyInvestMap), 1);
-        
         for (let m = 1; m <= 6; m++) {
             let mStr = String(m).padStart(2, '0');
             let mAmt = monthlyInvestMap[mStr];
             let heightPx = (mAmt / maxInvestInYear) * 60;
-
             investAnnualBox.innerHTML += `
                 <div class="invest-bar-wrapper">
                     <div class="invest-bar" style="height:${heightPx}px;" title="${m}월 저축액: ${mAmt.toLocaleString()}원"></div>
@@ -565,7 +614,6 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
 
-        // --- 기존 유형별 구성 및 세부 비율 리포트 ---
         let totalAll = vec + fix + inv;
         let vecPct = totalAll ? Math.round((vec/totalAll)*100) : 0;
         let fixPct = totalAll ? Math.round((fix/totalAll)*100) : 0;
@@ -616,12 +664,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ✏️ 다중 자연어 입출력 분석 모듈 (2번 고도화 요구사항 반영)
+    // ✏️ 다중 자연어 입출력 분석 모듈
     document.getElementById('btn-ai-submit').addEventListener('click', function() {
         let text = document.getElementById('ai-textarea').value.trim();
         if(!text) return;
 
-        // 다중 문장 추출 필터링 파싱링
         let sentences = text.split(/[.\n]|\b그리고\b/).map(s => s.trim()).filter(s => s.length > 1);
         let addedCount = 0;
 
@@ -633,17 +680,14 @@ document.addEventListener('DOMContentLoaded', function() {
             let parsedAmount = parseKoreanAmount(amtStr);
             if(parsedAmount === 0) return;
 
-            // 사고추론 매핑 함수 호출
             let deduced = deduceCategoryAndType(rawSentence);
-
-            // 미수 상태값 식별 구조화
             let isMisu = false;
             let misuAmt = 0;
+
             if (rawSentence.includes('정산받을') || rawSentence.includes('미수') || rawSentence.includes('받아야') || rawSentence.includes('정산받기로')) {
                 isMisu = true;
-                misuAmt = parsedAmount / 2; // 일괄 결제 시 디폴트 절반 할당 유추
+                misuAmt = parsedAmount / 2;
                 if (rawSentence.match(/([0-9만천원]+)\s*원?은?\s*정산/)) {
-                    // 내부 세부 미수 금액 추출 알고리즘 동작
                     let mStr = rawSentence.match(/([0-9만천원\s,]+)원은?\s*정산/);
                     if(mStr) misuAmt = parseKoreanAmount(mStr[1]);
                 }
@@ -670,7 +714,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 이벤트 리스너 바인딩 라인들
+    // 🛠️ 목표 설정 모달 제어 이벤트 바인딩
+    const goalModal = document.getElementById('goal-modal');
+    document.getElementById('btn-open-goal-modal').addEventListener('click', () => {
+        const currentGoal = JSON.parse(localStorage.getItem('smart_ledger_goal')) || { title: "배달비 줄이기", current: 23000, target: 200000 };
+        document.getElementById('input-goal-title').value = currentGoal.title;
+        document.getElementById('input-goal-current').value = currentGoal.current;
+        document.getElementById('input-goal-target').value = currentGoal.target;
+        goalModal.classList.add('active');
+    });
+
+    document.getElementById('btn-goal-close').addEventListener('click', () => goalModal.classList.remove('active'));
+    
+    document.getElementById('btn-goal-save').addEventListener('click', function() {
+        const updatedGoal = {
+            title: document.getElementById('input-goal-title').value.trim() || "목표 설정",
+            current: parseInt(document.getElementById('input-goal-current').value) || 0,
+            target: parseInt(document.getElementById('input-goal-target').value) || 1
+        };
+        localStorage.setItem('smart_ledger_goal', JSON.stringify(updatedGoal));
+        goalModal.classList.remove('active');
+        renderGoalUI();
+    });
+
+    // 기존 이벤트 바인딩 라인들
     document.getElementById('main-year-select').addEventListener('change', updateCalculations);
     document.getElementById('main-month-select').addEventListener('change', updateCalculations);
     document.getElementById('history-year-select').addEventListener('change', renderLists);
@@ -690,7 +757,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderLists();
     });
 
-    // 내부 버튼 클릭 위임자 처리 영역
     document.body.addEventListener('click', function(e) {
         if(e.target.classList.contains('tag-status') && e.target.tagName === 'BUTTON') {
             e.stopPropagation();
@@ -710,9 +776,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 🛠️ 모달 제어 엔진 인터페이스
     const editModal = document.getElementById('edit-modal');
-    
     window.openEditModal = function(id) {
         let matched = ledgerData.find(x => x.id === id);
         if(!matched) return;
@@ -739,7 +803,6 @@ document.addEventListener('DOMContentLoaded', function() {
             matched.title = document.getElementById('edit-title').value;
             matched.amount = parseInt(document.getElementById('edit-amount').value) || 0;
             
-            // 카테고리값 소속에 따른 대분류 속성 정밀 싱크로나이즈 재분류
             let cat = matched.category;
             if(['💼 월급','🎁 기타수입'].includes(cat)) {
                 matched.mainType = '수입'; matched.isIncome = true;
@@ -756,7 +819,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 🚀 데이터 런타임 초기 갱신 연산 구동
     updateCalculations();
 });
 </script>

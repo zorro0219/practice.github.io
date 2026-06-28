@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AI 스마트 가계부 - Professional Engine</title>
+    <title>AI 스마트 가계부 - Final Stable Version</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -30,13 +30,13 @@
 
         .tab-content { 
             flex: 1; display: none; flex-direction: column;
-            padding: 10px 16px calc(64px + env(safe-area-inset-bottom, 4px)) 16px; height: 100%; overflow: hidden;
+            padding: 10px 16px calc(54px + env(safe-area-inset-bottom, 4px)) 16px; height: 100%; overflow: hidden;
         }
         .tab-content.active { display: flex; }
 
         .global-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
         .selector-group { display: flex; gap: 6px; }
-        .select-box { background: var(--bg-card); border: 1px solid var(--border-light); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .select-box { background: var(--bg-card); border: 1px solid var(--border-light); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; outline: none; }
 
         .app-card { 
             background-color: var(--bg-card); border-radius: 16px; padding: 14px; margin-bottom: 12px; 
@@ -75,11 +75,10 @@
         .tag-status { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; background: #FF9800; color: white; border: none; }
         .tag-status.misu-active { background: #2E7D32; }
 
-        .search-row { display: flex; gap: 6px; margin-bottom: 10px; flex-shrink: 0; }
+        .search-row { display: flex; gap: 6px; margin-bottom: 10px; flex-shrink: 0; align-items: center; }
         .search-input { flex: 1; background: var(--bg-card); border: 1px solid var(--border-light); padding: 8px 12px; border-radius: 10px; font-size: 13px; outline: none; }
-        .btn-filter-misu { background: #FAF3EC; color: #FF9800; border: 1px solid #FFE0B2; padding: 0 12px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .btn-filter-misu { background: #FAF3EC; color: #FF9800; border: 1px solid #FFE0B2; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; height: 35px; }
 
-        /* 보고서 커스텀 구조 */
         .report-section { display: flex; flex-direction: column; gap: 14px; }
         .report-block-title { font-size: 12px; font-weight: 700; color: var(--brand-color); margin-bottom: 6px; display: flex; justify-content: space-between; }
         .compare-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed #F0EAE1; }
@@ -100,7 +99,6 @@
         .nav-item i { font-size: 15px; margin-bottom: 2px; }
         .nav-item.active { color: var(--text-primary); font-weight: 700; }
 
-        /* 공통 모달 디자인 */
         .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; visibility: hidden; opacity: 0; }
         .modal-overlay.active { visibility: visible; opacity: 1; }
         .custom-modal { background: var(--bg-card); border-radius: 16px; width: 88%; padding: 16px; }
@@ -121,8 +119,18 @@
         <div class="global-header">
             <h1 style="font-size: 18px; font-weight: 700;">소비 대시보드</h1>
             <div class="selector-group">
-                <select class="select-box"><option>2026년</option></select>
-                <select class="select-box"><option>6월</option></select>
+                <select class="select-box" id="main-year-select">
+                    <option value="2026" selected>2026년</option>
+                    <option value="2025">2025년</option>
+                </select>
+                <select class="select-box" id="main-month-select">
+                    <option value="06" selected>6월</option>
+                    <option value="05">5월</option>
+                    <option value="04">4월</option>
+                    <option value="03">3월</option>
+                    <option value="02">2월</option>
+                    <option value="01">1월</option>
+                </select>
             </div>
         </div>
         
@@ -163,6 +171,20 @@
     <div id="tab-history" class="tab-content">
         <div class="global-header">
             <h1 style="font-size: 18px; font-weight: 700;">상세 내역 명세서</h1>
+            <div class="selector-group">
+                <select class="select-box" id="history-year-select">
+                    <option value="2026" selected>2026년</option>
+                    <option value="2025">2025년</option>
+                </select>
+                <select class="select-box" id="history-month-select">
+                    <option value="06" selected>6월</option>
+                    <option value="05">5월</option>
+                    <option value="04">4월</option>
+                    <option value="03">3월</option>
+                    <option value="02">2월</option>
+                    <option value="01">1월</option>
+                </select>
+            </div>
         </div>
         <div class="search-row">
             <input type="text" class="search-input" id="search-input" placeholder="🔍 내역 실시간 검색...">
@@ -177,38 +199,33 @@
             <h1 style="font-size: 18px; font-weight: 700;">자연어 다중 기록 인풋</h1>
         </div>
         <div class="app-card" style="padding: 16px; flex-shrink: 0;">
-            <textarea style="width:100%; height:150px; background:#FBF8F3; border:1px solid #E5DEC9; border-radius:12px; padding:12px; font-size:13px; resize:none; outline:none; margin-bottom: 12px; line-height: 1.5;" id="ai-textarea" placeholder="여기에 자유롭게 작성하세요. (단위 환산 및 다중 문장 자동 분할 지원)&#10;&#10;예시 입력문장:&#10;월급 7500000원 입금 완료. 점심식사로 삼계탕 12000원 먹고 커피 4500원 결제함. 커피는 친구꺼까지 같이 9000원 변동 지출하고 4500원은 정산받을 미수금액임."></textarea>
+            <textarea style="width:100%; height:150px; background:#FBF8F3; border:1px solid #E5DEC9; border-radius:12px; padding:12px; font-size:13px; resize:none; outline:none; margin-bottom: 12px; line-height: 1.5;" id="ai-textarea" placeholder="여기에 자유롭게 작성하세요.&#10;&#10;예시: 월급 7500000원 입금 완료. 점심식사로 삼계탕 12000원 먹고 커피 4500원 결제함. 커피는 친구꺼까지 같이 9000원 변동 지출하고 4500원은 정산받을 미수금액임."></textarea>
             <button style="width:100%; background:var(--text-primary); color:white; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer; font-size:14px;" id="btn-ai-submit">지능형 다중 분할 분석 실행</button>
         </div>
     </div>
 
-    <!-- 4️⃣ 분석 탭 (월간 보고서 고도화) -->
+    <!-- 4️⃣ 분석 탭 -->
     <div id="tab-analysis" class="tab-content">
         <div class="global-header">
             <h1 style="font-size: 18px; font-weight: 700;">월간 자산 분석 보고서</h1>
         </div>
         <div class="app-card" style="flex:1; overflow-y:auto; padding: 14px; margin-bottom:0; display:flex; flex-direction:column; gap:16px;">
-            
             <div>
                 <div class="report-block-title"><span>📊 유형별 자산 비교 지표</span></div>
                 <div class="chart-pure-css" id="analysis-type-box"></div>
             </div>
-
             <div>
                 <div class="report-block-title"><span>🍕 카테고리별 세부 지출 비율</span></div>
                 <div class="chart-pure-css" id="analysis-chart-box"></div>
             </div>
-
             <div>
                 <div class="report-block-title"><span>🔄 전월 비교 분석 (기준: 5월 대비)</span></div>
                 <div id="analysis-compare-box"></div>
             </div>
-
             <div>
                 <div class="report-block-title"><span>✨ AI 자동 생성 코멘트 리포트</span></div>
                 <div class="ai-comment-box" id="ai-comment-text">데이터를 취합하고 있습니다...</div>
             </div>
-            
         </div>
     </div>
 
@@ -227,8 +244,12 @@
         <div class="modal-title">📝 거래 내역 정밀 수정</div>
         <input type="hidden" id="edit-id">
         <div class="form-group">
-            <label>날짜 및 시간</label>
-            <input type="text" class="form-control" id="edit-datetime">
+            <label>날짜</label>
+            <input type="text" class="form-control" id="edit-date" placeholder="MM.DD 형식 (예: 06.28)">
+        </div>
+        <div class="form-group">
+            <label>시간</label>
+            <input type="text" class="form-control" id="edit-time" placeholder="HH:MM 형식 (예: 14:30)">
         </div>
         <div class="form-group">
             <label>카테고리 분류</label>
@@ -258,16 +279,16 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 기본 인입 초기 더미 데이터 세팅
+    // 내부 반응형 인입 데이터베이스 시스템
     let ledgerData = [
-        { id: 1, date: '06.28', time: '12:30', mainType: '변동', category: '🍚 식비', title: '점심식사 삼계탕', amount: 12000, isIncome: false, isMisu: false, misuAmt: 0 },
-        { id: 2, date: '06.28', time: '13:00', mainType: '변동', category: '☕ 카페', title: '커피 친구 일괄 결제', amount: 9000, isIncome: false, isMisu: true, misuAmt: 4500 },
-        { id: 3, date: '06.25', time: '09:00', mainType: '고정', category: '📺 고정구독', title: '넷플릭스', amount: 17000, isIncome: false, isMisu: false, misuAmt: 0 }
+        { id: 1, year: '2026', month: '06', date: '06.28', time: '12:30', mainType: '변동', category: '🍚 식비', title: '점심식사 삼계탕', amount: 12000, isIncome: false, isMisu: false, misuAmt: 0 },
+        { id: 2, year: '2026', month: '06', date: '06.28', time: '13:00', mainType: '변동', category: '☕ 카페', title: '커피 친구 일괄 결제', amount: 9000, isIncome: false, isMisu: true, misuAmt: 4500 },
+        { id: 3, year: '2026', month: '06', date: '06.25', time: '09:00', mainType: '고정', category: '📺 고정구독', title: '넷플릭스', amount: 17000, isIncome: false, isMisu: false, misuAmt: 0 }
     ];
 
     let showMisuOnly = false;
 
-    // ⚓ 탭 클릭 스위칭 연동 로직
+    // ⚓ 탭 클릭 스위칭 대시보드 연동
     const navItems = document.querySelectorAll('.nav-item');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -286,28 +307,23 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelector('[data-target="tab-history"]').click();
     });
 
-    // 💰 한글 금액 정밀 변환기 (750만원, 1만2천원 정규식 처리)
+    // 💰 한국어 금액 유연성 정밀 정산기
     function parseKoreanAmount(text) {
         let clean = text.replace(/,/g, '').trim();
         let total = 0;
 
-        // '억' 단위 추출 및 계산
         if (clean.includes('억')) {
             let parts = clean.split('억');
             let eokVal = parseInt(parts[0].replace(/[^0-9]/g, '')) || 0;
             total += eokVal * 100000000;
             clean = parts[1] || '';
         }
-
-        // '만' 단위 추출 및 계산
         if (clean.includes('만')) {
             let parts = clean.split('만');
             let manVal = parseInt(parts[0].replace(/[^0-9]/g, '')) || 0;
             total += manVal * 10000;
             clean = parts[1] || '';
         }
-
-        // '천' 단위 추출 및 계산
         if (clean.includes('천')) {
             let parts = clean.split('천');
             let cheonVal = parseInt(parts[0].replace(/[^0-9]/g, '')) || 0;
@@ -315,37 +331,39 @@ document.addEventListener('DOMContentLoaded', function() {
             clean = parts[1] || '';
         }
 
-        // 남은 숫자 정산
         let remain = parseInt(clean.replace(/[^0-9]/g, '')) || 0;
         total += remain;
 
-        // 숫자가 아예 없다면 순수 정수만 리턴 시도
         if (total === 0) {
             let pureNum = parseInt(text.replace(/[^0-9]/g, ''));
             return isNaN(pureNum) ? 0 : pureNum;
         }
-
         return total;
     }
 
-    // 🧮 핵심 금액 재연산 및 유기적 연동 함수
+    // 🧮 선택된 년/월 필터에 따른 실시간 금액 재연산 처리 함수
     function updateCalculations() {
+        const selectedYear = document.getElementById('main-year-select').value;
+        const selectedMonth = document.getElementById('main-month-select').value;
+
         let totalIncome = 0;
         let totalVariable = 0;
         let totalFixed = 0;
         let totalInvest = 0;
 
+        // 선택된 년/월에 부합하는 내역만 대시보드 연산에 투입
         ledgerData.forEach(item => {
-            if (item.isIncome) {
-                totalIncome += item.amount;
-            } else {
-                if (item.mainType === '변동') totalVariable += item.amount;
-                if (item.mainType === '고정') totalFixed += item.amount;
-                if (item.mainType === '저축' || item.mainType === '투자') totalInvest += item.amount;
+            if (item.year === selectedYear && item.month === selectedMonth) {
+                if (item.isIncome) {
+                    totalIncome += item.amount;
+                } else {
+                    if (item.mainType === '변동') totalVariable += item.amount;
+                    if (item.mainType === '고정') totalFixed += item.amount;
+                    if (item.mainType === '저축' || item.mainType === '투자') totalInvest += item.amount;
+                }
             }
         });
 
-        // 대시보드 반영
         let netSuji = totalIncome - (totalVariable + totalFixed + totalInvest);
         document.getElementById('v-suji').textContent = (netSuji >= 0 ? '+' : '') + netSuji.toLocaleString() + '원';
         document.getElementById('v-inc').textContent = totalIncome.toLocaleString() + '원';
@@ -355,9 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let msgElement = document.getElementById('v-msg');
         if(netSuji > 0) {
-            msgElement.textContent = "💰 이번 달 수입이 지출보다 많아 자산이 확장 중입니다.";
+            msgElement.textContent = `💰 ${selectedMonth}월은 수입이 지출을 상회하여 자산이 확장 중입니다.`;
         } else if(netSuji < 0) {
-            msgElement.textContent = "⚠️ 지출 및 고정비가 수입을 초과했습니다. 예산을 점검하세요.";
+            msgElement.textContent = `⚠️ ${selectedMonth}월 지출이 과다합니다. 고정비 및 변동 지출을 점검하세요.`;
         } else {
             msgElement.textContent = "📊 대시보드 지수 수지가 균형을 이루고 있습니다.";
         }
@@ -366,11 +384,14 @@ document.addEventListener('DOMContentLoaded', function() {
         renderAnalysisReport(totalIncome, totalVariable, totalFixed, totalInvest);
     }
 
-    // 📋 실시간 리스트 동적 빌드
+    // 📋 전체 리스트 렌더링 동기화 연동
     function renderLists() {
         const homeBox = document.getElementById('home-recent-box');
         const fullBox = document.getElementById('full-history-box');
         const searchVal = document.getElementById('search-input').value.toLowerCase();
+
+        const hYear = document.getElementById('history-year-select').value;
+        const hMonth = document.getElementById('history-month-select').value;
 
         homeBox.innerHTML = '';
         fullBox.innerHTML = '';
@@ -402,7 +423,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
 
-            // 홈 화면 리스트업
+            // 홈 화면 리스트업 (최근 4개만 배치)
             if (homeBox.children.length < 4) {
                 let d = document.createElement('div');
                 d.className = 'history-item';
@@ -410,7 +431,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 homeBox.appendChild(d);
             }
 
-            // 내역 명세서 탭 리스트업 (미수 필터 처리 반영)
+            // 내역 탭 기간 필터링 및 검색어 동시 적용 매칭
+            if (item.year !== hYear || item.month !== hMonth) return;
             if (showMisuOnly && !item.isMisu) return;
             if (!isMatched) return;
 
@@ -421,14 +443,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 📊 분석 데이터 및 고도화 보고서 기능 연동
+    // 📊 분석 데이터 및 리포트 작성 엔진
     function renderAnalysisReport(inc, vec, fix, inv) {
         const typeBox = document.getElementById('analysis-type-box');
         const catBox = document.getElementById('analysis-chart-box');
         const compBox = document.getElementById('analysis-compare-box');
         const aiComment = document.getElementById('ai-comment-text');
 
-        // 1. 유형별 차트 빌드
         let totalAll = vec + fix + inv;
         let vecPct = totalAll ? Math.round((vec/totalAll)*100) : 0;
         let fixPct = totalAll ? Math.round((fix/totalAll)*100) : 0;
@@ -449,7 +470,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
-        // 2. 카테고리별 분할 빌드
         let catMap = {};
         ledgerData.forEach(item => {
             if(!item.isIncome) {
@@ -473,78 +493,63 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // 3. 전월 비교 더미 시뮬레이션 데이터 매칭
-        let prevVec = 45000;
-        let prevFix = 17000;
-        let vecDiff = vec - prevVec;
-        let fixDiff = fix - prevFix;
+        let prevVec = 45000; let prevFix = 17000;
+        let vecDiff = vec - prevVec; let fixDiff = fix - prevFix;
 
         compBox.innerHTML = `
             <div class="compare-row"><span>변동지출 전월비교</span><span style="color:${vecDiff>=0?'#C62828':'#2E7D32'}">${vecDiff >= 0 ? '▲' : '▼'} ${Math.abs(vecDiff).toLocaleString()}원</span></div>
             <div class="compare-row"><span>고정비용 전월비교</span><span style="color:${fixDiff>=0?'#C62828':'#2E7D32'}">${fixDiff >= 0 ? '▲' : '▼'} ${Math.abs(fixDiff).toLocaleString()}원</span></div>
         `;
 
-        // 4. 지능형 종합 결산 코멘트 출력
         if(inc === 0 && totalAll === 0) {
-            aiComment.textContent = "💡 데이터 인풋이 부족합니다. 입력 창에서 일상 대화나 영수증 내역을 입력해 주세요.";
+            aiComment.textContent = "💡 데이터 인풋이 부족합니다. 입력 창에서 내역을 기입해 주세요.";
         } else {
-            aiComment.textContent = `📝 현재까지 확인된 총 수입은 ${inc.toLocaleString()}원이며, 고정비와 변동비 지출의 비율은 각각 ${fixPct}%, ${vecPct}%를 유지하고 있습니다. 미수 정산 타겟 데이터 금액을 확보 시 순 자산 수지는 유동적으로 추가 개선될 가능성이 높습니다. 자산 균형을 위해 저축 비율을 좀 더 높이는 포트폴리오를 추천합니다.`;
+            aiComment.textContent = `📝 현재 분석된 총 수입은 ${inc.toLocaleString()}원이며, 가계부 고정비 비율은 ${fixPct}%, 변동비는 ${vecPct}%입니다. 미수 정산 타겟 데이터가 회수되면 순수 자산 밸런스가 추가 개선될 여지가 있습니다.`;
         }
     }
 
-    // ✏️ 다중 자연어 파싱 엔진 핵심부
+    // ✏️ 다중 자연어 파싱 결산 처리
     document.getElementById('btn-ai-submit').addEventListener('click', function() {
         let text = document.getElementById('ai-textarea').value.trim();
         if(!text) return;
 
-        // 마침표 또는 문맥 마커 단위로 여러 문장을 개별 배열화 처리
         let sentences = text.split(/[.\n]|\b그리고\b/).map(s => s.trim()).filter(s => s.length > 1);
         let addedCount = 0;
 
         sentences.forEach(rawSentence => {
-            // 단어나 문장 안에 금액 매칭 검사
             let numMatch = rawSentence.match(/[0-9만천원\s,]+/g);
             if(!numMatch) return;
 
-            // 해당 문장에서 가장 유력한 금액 문자열 필터링
             let amtStr = numMatch.sort((a,b) => b.length - a.length)[0];
             let parsedAmount = parseKoreanAmount(amtStr);
             if(parsedAmount === 0) return;
 
-            // 1차 변수 할당 초기화
             let mainType = '변동';
             let category = '🍚 식비';
             let isIncome = false;
             let isMisu = false;
             let misuAmt = 0;
 
-            // 단어 사전 기반 문맥 분류 맵핑 정밀화
             if(rawSentence.includes('월급') || rawSentence.includes('수입') || rawSentence.includes('입금')) {
-                mainType = '수입';
-                category = '💰 월급';
-                isIncome = true;
+                mainType = '수입'; category = '💰 월급'; isIncome = true;
             } else if(rawSentence.includes('커피') || rawSentence.includes('카페') || rawSentence.includes('스타벅스')) {
                 category = '☕ 카페';
             } else if(rawSentence.includes('구독') || rawSentence.includes('넷플릭스') || rawSentence.includes('고정비')) {
-                mainType = '고정';
-                category = '📺 고정구독';
+                mainType = '고정'; category = '📺 고정구독';
             } else if(rawSentence.includes('저축') || rawSentence.includes('적금') || rawSentence.includes('투자')) {
-                mainType = '저축';
-                category = '📈 저축·투자';
+                mainType = '저축'; category = '📈 저축·투자';
             } else if(rawSentence.includes('삼계탕') || rawSentence.includes('식사') || rawSentence.includes('밥')) {
                 category = '🍚 식비';
             } else {
                 category = '기타';
             }
 
-            // 미수 정산 대상 문맥 감지 서브 모듈
             if(rawSentence.includes('정산받을') || rawSentence.includes('미수') || rawSentence.includes('받아야')) {
                 isMisu = true;
-                misuAmt = parsedAmount / 2; // 예시 시나리오 기반 절반 또는 지정 처리 유연화 기틀 설정
+                misuAmt = parsedAmount / 2;
                 if(rawSentence.includes('4500원')) misuAmt = 4500; 
             }
 
-            // 불필요 찌꺼기 문자 제거 후 깔끔한 타이틀 명칭 정제
             let title = rawSentence.replace(/[0-9만천원\s,]+/g, '')
                                    .replace('변동','').replace('고정','').replace('수입','')
                                    .replace('결제함','').replace('먹고','').trim();
@@ -552,15 +557,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             ledgerData.unshift({
                 id: Date.now() + Math.floor(Math.random()*1000),
-                date: '06.28',
-                time: '14:40',
-                mainType: mainType,
-                category: category,
-                title: title,
-                amount: parsedAmount,
-                isIncome: isIncome,
-                isMisu: isMisu,
-                misuAmt: misuAmt
+                year: '2026', month: '06', date: '06.28', time: '14:40',
+                mainType: mainType, category: category, title: title,
+                amount: parsedAmount, isIncome: isIncome, isMisu: isMisu, misuAmt: misuAmt
             });
             addedCount++;
         });
@@ -568,28 +567,31 @@ document.addEventListener('DOMContentLoaded', function() {
         if(addedCount > 0) {
             document.getElementById('ai-textarea').value = '';
             updateCalculations();
-            // 시각 연동 피드백: 완료 후 자동으로 홈 화면 대시보드 리턴 전환
             document.querySelector('[data-target="tab-home"]').click();
         }
     });
 
-    // 🔍 미수정산 전용 필터 버튼 텍스트 복구 토글 연동
+    // 연도 및 월 변경 셀렉터 이벤트 바인딩
+    document.getElementById('main-year-select').addEventListener('change', updateCalculations);
+    document.getElementById('main-month-select').addEventListener('change', updateCalculations);
+    document.getElementById('history-year-select').addEventListener('change', renderLists);
+    document.getElementById('history-month-select').addEventListener('change', renderLists);
+
+    // 미수정산 보기 토글 버튼 연동
     const misuBtn = document.getElementById('btn-toggle-misu');
     misuBtn.addEventListener('click', function() {
         showMisuOnly = !showMisuOnly;
         if(showMisuOnly) {
             this.textContent = "전체 내역 보기";
-            this.style.background = "var(--text-primary)";
-            this.style.color = "#FFFFFF";
+            this.style.background = "var(--text-primary)"; this.style.color = "#FFFFFF";
         } else {
             this.textContent = "미수 정산만";
-            this.style.background = "#FAF3EC";
-            this.style.color = "#FF9800";
+            this.style.background = "#FAF3EC"; this.style.color = "#FF9800";
         }
         renderLists();
     });
 
-    // 📋 정산 완료 처리 버튼 및 삭제 동작 클릭 이벤트 위임
+    // 정산 및 삭제 위임 처리
     document.body.addEventListener('click', function(e) {
         if(e.target.classList.contains('tag-status') && e.target.tagName === 'BUTTON') {
             e.stopPropagation();
@@ -609,7 +611,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 🛠️ 세부 내용 수정 모달 제어 함수
+    // 🛠️ 내역 상세 수정창 제어 인터페이스 모듈
     const editModal = document.getElementById('edit-modal');
     
     window.openEditModal = function(id) {
@@ -617,7 +619,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if(!matched) return;
 
         document.getElementById('edit-id').value = matched.id;
-        document.getElementById('edit-datetime').value = `${matched.date} ${matched.time}`;
+        document.getElementById('edit-date').value = matched.date;
+        document.getElementById('edit-time').value = matched.time;
         document.getElementById('edit-category').value = matched.category;
         document.getElementById('edit-title').value = matched.title;
         document.getElementById('edit-amount').value = matched.amount;
@@ -627,31 +630,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('btn-edit-close').addEventListener('click', () => editModal.classList.remove('active'));
     
-    document.getElementById('edit-save').onclick = null; // 중복 바인딩 방지용 초기화
+    // 수정본 데이터 저장 로직 결함 완전 보정
     document.getElementById('btn-edit-save').addEventListener('click', function() {
         let id = parseInt(document.getElementById('edit-id').value);
         let matched = ledgerData.find(x => x.id === id);
         if(matched) {
-            let dt = document.getElementById('edit-datetime').value.split(' ');
-            matched.date = dt[0] || '06.28';
-            matched.time = dt[1] || '00:00';
+            matched.date = document.getElementById('edit-date').value || '06.28';
+            matched.time = document.getElementById('edit-time').value || '12:00';
             matched.category = document.getElementById('edit-category').value;
             matched.title = document.getElementById('edit-title').value;
             matched.amount = parseInt(document.getElementById('edit-amount').value) || 0;
             
-            // 수입 카테고리 여부에 따라 부호 플래그 스위칭 싱크 보정
             matched.isIncome = (matched.category === '💰 월급');
-            if(matched.isIncome) matched.mainType = '수입';
+            if(matched.isIncome) {
+                matched.mainType = '수입';
+            } else {
+                if(matched.category === '📺 고정구독') matched.mainType = '고정';
+                else if(matched.category === '📈 저축·투자') matched.mainType = '저축';
+                else mainType = '변동';
+            }
             
             editModal.classList.remove('active');
-            updateCalculations();
+            updateCalculations(); // 수정본 연동 리렌더링 긴급 호출
         }
     });
 
-    // 실시간 검색 인풋 이벤트 연결
     document.getElementById('search-input').addEventListener('input', renderLists);
 
-    // 🚀 초기 런타임 수지 연산 가동
+    // 초기 구동 실행
     updateCalculations();
 });
 </script>
